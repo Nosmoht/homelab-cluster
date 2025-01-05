@@ -1,0 +1,34 @@
+apiVersion: dnsmasq.kvaps.cf/v1beta1
+kind: DnsHosts
+metadata:
+  name: homelab
+spec:
+  controller: homelab
+  hosts:
+    - ip: 10.0.0.1
+      hostnames:
+        - sidero
+        - sidero.homelab.ntbc.io
+    - ip: 10.0.0.10
+      hostnames:
+        - homelab-api
+    - ip: 10.0.0.11
+      hostnames:
+        - homelab-node-01
+        - homelab-node-01.homelab.ntbc.io
+    - ip: 10.0.0.12
+      hostnames:
+        - homelab-node-02
+        - homelab-node-02.homelab.ntbc.io
+    - ip: 10.0.0.13
+      hostnames:
+        - homelab-node-03
+        - homelab-node-03.homelab.ntbc.io
+    - ip: 10.0.0.14
+      hostnames:
+        - homelab-node-04
+        - homelab-node-04.homelab.ntbc.io
+    - ip: 10.0.0.15
+      hostnames:
+        - homelab-node-05
+        - homelab-node-05.homelab.ntbc.io

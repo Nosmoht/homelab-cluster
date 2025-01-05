@@ -1,0 +1,31 @@
+apiVersion: dnsmasq.kvaps.cf/v1beta1
+kind: DnsmasqOptions
+metadata:
+  name: homelab
+  annotations:
+    homelab.ntbc.io/docs: https://www.sidero.dev/v0.6/getting-started/prereq-dhcp/
+spec:
+  controller: homelab
+  options:
+    - key: server
+      values: [10.0.0.1]
+    - key: dhcp-range
+      values: [10.0.0.0, static, infinite]
+    - key: dhcp-match
+      values: ['set:ipxeclient', '175', '39']
+    - key: dhcp-boot
+      values: ['tag:ipxeclient', 'http://10.0.0.1:8081/boot.ipxe']
+    - key: dhcp-match
+      values: ['set:biosclients', 'option:client-arch', '0']
+    - key: dhcp-boot
+      values: ['tag:biosclients', 'undionly.kpxe']
+    - key: dhcp-match
+      values: ['set:pxeclients', 'option:client-arch', '7']
+    - key: dhcp-match
+      values: ['set:pxeclients', 'option:client-arch', '9']
+    - key: dhcp-boot
+      values: ['tag:pxeclients', 'snp.efi']
+    - key: dhcp-match
+      values: ['set:httpclients', 'option:client-arch', '10']
+    - key: dhcp-boot
+      values: ['tag:httpclients', 'http://10.0.0.1/tftp/snp.efi']

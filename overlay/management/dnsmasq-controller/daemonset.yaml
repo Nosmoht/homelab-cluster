@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: dnsmasq-controller
+  labels:
+    app: dnsmasq-controller
+spec:
+  selector:
+    matchLabels:
+      app: dnsmasq-controller
+  template:
+    metadata:
+      labels:
+        app: dnsmasq-controller
+    spec:
+      hostNetwork: true
+      containers:
+        - name: dnsmasq
+          image: docker.io/ntbc/dnsmasq-controller:v0.5.4
+          imagePullPolicy: IfNotPresent
+          args:
+            - --controller=homelab
+            - --metrics-addr=:0
+            - --dhcp
+            - --dns
+            - --
+            - --bind-interfaces
+            - --bogus-priv
+            - --listen-address=10.0.0.1
+            # - --domain=home.ntbc.io
+            # - --expand-hosts
+            - --log-dhcp
+            - --log-queries
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          resources:
+            limits:
+              cpu: 100m
+              memory: 30Mi
+            requests:
+              cpu: 100m
+              memory: 20Mi
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+      priorityClassName: system-node-critical
+      serviceAccountName: dnsmasq-controller
+      terminationGracePeriodSeconds: 10
+      # nodeSelector:
+      #   node-role.kubernetes.io/dnsmasq: ""
+      tolerations:
+        - effect: NoSchedule
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
+        - key: CriticalAddonsOnly
+          operator: Exists
