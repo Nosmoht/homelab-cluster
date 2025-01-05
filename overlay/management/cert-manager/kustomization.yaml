@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: cert-manager
+resources:
+  - ../../../base/cert-manager/v1.16.2
+  - cluster-issuer.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+secretGenerator:
+  - name: google-cloud-dns
+    files:
+      - service-account-key.json

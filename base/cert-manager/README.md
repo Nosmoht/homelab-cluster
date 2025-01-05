@@ -1,4 +1,4 @@
-# Cert-Manager
+# cert-manager
 
 ## Links
 
