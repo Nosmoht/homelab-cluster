@@ -1,0 +1,8 @@
+apiVersion: operator.cluster.x-k8s.io/v1alpha2
+kind: InfrastructureProvider
+metadata:
+  name: sidero
+spec:
+  version: v0.6.7
+  configSecret:
+    name: sidero
