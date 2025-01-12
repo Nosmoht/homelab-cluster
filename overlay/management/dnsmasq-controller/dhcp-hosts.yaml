@@ -8,20 +8,24 @@ spec:
     - ip: 10.0.0.11
       macs:
         - 6c:4b:90:79:3e:4c
-      hostname: homelab-node-01
+      hostname: node-01
     - ip: 10.0.0.12
       macs:
         - 6c:4b:90:69:53:e2
-      hostname: homelab-node-02
+      hostname: node-02
     - ip: 10.0.0.13
       macs:
         - 6c:4b:90:69:53:7d
-      hostname: homelab-node-03
+      hostname: node-03
     - ip: 10.0.0.14
       macs:
         - 6c:4b:90:51:99:c7
-      hostname: homelab-node-04
+      hostname: node-04
     - ip: 10.0.0.15
       macs:
         - 6c:4b:90:95:97:2e
-      hostname: homelab-node-05
+      hostname: node-05
+    - ip: 10.0.0.254
+      macs:
+        - 54:07:7d:20:b0:53
+      hostname: switch

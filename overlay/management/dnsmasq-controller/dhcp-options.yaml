@@ -9,8 +9,8 @@ spec:
       values: [10.0.0.1]
     - key: option:dns-server
       values: [10.0.0.1]
-  # - key: option:ntp-server
-  #   values: [10.0.0.1]
+      # - key: option:ntp-server
+      #   values: [10.0.0.1]
     - key: option:domain-name
       values: [homelab.ntbc.io]
     - key: option:domain-search

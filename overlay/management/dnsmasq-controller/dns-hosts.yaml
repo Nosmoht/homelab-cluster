@@ -11,24 +11,29 @@ spec:
         - sidero.homelab.ntbc.io
     - ip: 10.0.0.10
       hostnames:
-        - homelab-api
+        - k8s-api
+        - k8s-api.homelab.ntbc.io
     - ip: 10.0.0.11
       hostnames:
-        - homelab-node-01
-        - homelab-node-01.homelab.ntbc.io
+        - node-01
+        - node-01.homelab.ntbc.io
     - ip: 10.0.0.12
       hostnames:
-        - homelab-node-02
-        - homelab-node-02.homelab.ntbc.io
+        - node-02
+        - node-02.homelab.ntbc.io
     - ip: 10.0.0.13
       hostnames:
-        - homelab-node-03
-        - homelab-node-03.homelab.ntbc.io
+        - node-03
+        - node-03.homelab.ntbc.io
     - ip: 10.0.0.14
       hostnames:
-        - homelab-node-04
-        - homelab-node-04.homelab.ntbc.io
+        - node-04
+        - node-04.homelab.ntbc.io
     - ip: 10.0.0.15
       hostnames:
-        - homelab-node-05
-        - homelab-node-05.homelab.ntbc.io
+        - node-05
+        - node-05.homelab.ntbc.io
+    - ip: 10.0.254
+      hostnames:
+        - switch
+        - switch.homelab.ntbc.io
