@@ -27,8 +27,7 @@ spec:
             - --bind-interfaces
             - --bogus-priv
             - --listen-address=10.0.0.1
-            # - --domain=home.ntbc.io
-            # - --expand-hosts
+            - --expand-hosts
             - --log-dhcp
             - --log-queries
           env:
