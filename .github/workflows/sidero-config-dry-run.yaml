@@ -49,12 +49,20 @@ jobs:
           CLUSTER_INSTALL_IMAGE_BASE=${CLUSTER_INSTALL_IMAGE_BASE}
           TALOS_NODE_ENDPOINT=${TALOS_PUBLIC_ENDPOINT}
           EOF
+          if [ -n "${CLUSTER_ADDITIONAL_SANS:-}" ]; then
+            echo "CLUSTER_ADDITIONAL_SANS=${CLUSTER_ADDITIONAL_SANS}" >> install/.env
+          fi
+          if [ -n "${CLUSTER_ENDPOINT:-}" ]; then
+            echo "CLUSTER_ENDPOINT=${CLUSTER_ENDPOINT}" >> install/.env
+          fi
         env:
           CLUSTER_NAME: ${{ vars.CLUSTER_NAME }}
           CLUSTER_NODE_IP: ${{ vars.CLUSTER_NODE_IP }}
           CLUSTER_INSTALL_DISK: ${{ vars.CLUSTER_INSTALL_DISK }}
           CLUSTER_INSTALL_IMAGE_BASE: ${{ vars.CLUSTER_INSTALL_IMAGE_BASE }}
           TALOS_PUBLIC_ENDPOINT: ${{ vars.TALOS_PUBLIC_ENDPOINT }}
+          CLUSTER_ADDITIONAL_SANS: ${{ vars.CLUSTER_ADDITIONAL_SANS }}
+          CLUSTER_ENDPOINT: ${{ vars.CLUSTER_ENDPOINT }}
 
       - name: Write talosconfig
         shell: bash
