@@ -1,0 +1,27 @@
+cluster:
+  allowSchedulingOnControlPlanes: true
+  apiServer:
+    extraArgs:
+      bind-address: 10.0.0.1
+  etcd:
+    advertisedSubnets:
+      - 10.0.0.0/24
+  extraManifests:
+    - https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/refs/tags/v0.10.2/deploy/standalone-install.yaml
+    - https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.8.1/components.yaml
+machine:
+  network:
+    interfaces:
+      - deviceSelector:
+          hardwareAddr: dc:a6:32:c4:57:e8
+        dhcp: true
+      - addresses:
+          - 10.0.0.1/24
+        deviceSelector:
+          hardwareAddr: c8:a3:62:2c:75:18
+        dhcp: false
+---
+apiVersion: v1alpha1
+kind: HostnameConfig
+hostname: sidero
+auto: off

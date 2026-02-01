@@ -131,8 +131,8 @@ talosctl-gen-config-talosconfig: check-env talosctl-gen-secrets prepare-output-d
 		$(GEN_CONFIG_COMMON_FLAGS) \
 		--output $(CLUSTER_CONFIG_OUTPUT_TALOSCONFIG) \
 		--output-types talosconfig && \
-	talosctl --talosconfig $(CLUSTER_CONFIG_OUTPUT_TALOSCONFIG) config endpoint $(CLUSTER_NODE_IP)
-	talosctl --talosconfig $(CLUSTER_CONFIG_OUTPUT_TALOSCONFIG) config node $(CLUSTER_NODE_IP)
+	talosctl --talosconfig $(CLUSTER_CONFIG_OUTPUT_TALOSCONFIG) config endpoint $(TALOS_NODE_ENDPOINT)
+	talosctl --talosconfig $(CLUSTER_CONFIG_OUTPUT_TALOSCONFIG) config node $(TALOS_NODE_ENDPOINT)
 
 talosctl-gen-config: talosctl-gen-config-controlplane talosctl-gen-config-worker talosctl-gen-config-talosconfig
 

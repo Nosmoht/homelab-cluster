@@ -1,30 +1,17 @@
-name: sidero-management
+name: sidero-config-dry-run
 
 on:
-  workflow_dispatch:
-    inputs:
-      action:
-        description: "Management action"
-        required: true
-        type: choice
-        options:
-          - config
-          - config-dry-run
-          - install
-          - apply
-          - upgrade
-          - upgrade-k8s
-      confirm:
-        description: "Type I-UNDERSTAND to run"
-        required: true
-        default: ""
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
 
 permissions:
   contents: read
 
 jobs:
-  manage:
-    if: ${{ inputs.confirm == 'I-UNDERSTAND' }}
+  config-dry-run:
+    if: ${{ github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -62,12 +49,20 @@ jobs:
           CLUSTER_INSTALL_IMAGE_BASE=${CLUSTER_INSTALL_IMAGE_BASE}
           TALOS_NODE_ENDPOINT=${TALOS_PUBLIC_ENDPOINT}
           EOF
+          if [ -n "${CLUSTER_ADDITIONAL_SANS:-}" ]; then
+            echo "CLUSTER_ADDITIONAL_SANS=${CLUSTER_ADDITIONAL_SANS}" >> install/.env
+          fi
+          if [ -n "${CLUSTER_ENDPOINT:-}" ]; then
+            echo "CLUSTER_ENDPOINT=${CLUSTER_ENDPOINT}" >> install/.env
+          fi
         env:
           CLUSTER_NAME: ${{ vars.CLUSTER_NAME }}
           CLUSTER_NODE_IP: ${{ vars.CLUSTER_NODE_IP }}
           CLUSTER_INSTALL_DISK: ${{ vars.CLUSTER_INSTALL_DISK }}
           CLUSTER_INSTALL_IMAGE_BASE: ${{ vars.CLUSTER_INSTALL_IMAGE_BASE }}
           TALOS_PUBLIC_ENDPOINT: ${{ vars.TALOS_PUBLIC_ENDPOINT }}
+          CLUSTER_ADDITIONAL_SANS: ${{ vars.CLUSTER_ADDITIONAL_SANS }}
+          CLUSTER_ENDPOINT: ${{ vars.CLUSTER_ENDPOINT }}
 
       - name: Write talosconfig
         shell: bash
@@ -82,7 +77,6 @@ jobs:
           TALOSCONFIG_B64: ${{ secrets.TALOSCONFIG_B64 }}
 
       - name: Write secrets
-        if: ${{ contains(fromJson('["config","config-dry-run","install","apply"]'), inputs.action) }}
         shell: bash
         run: |
           set -euo pipefail
@@ -91,11 +85,11 @@ jobs:
         env:
           TALOS_BOOTSTRAP_SECRETS_YAML_B64: ${{ secrets.TALOS_BOOTSTRAP_SECRETS_YAML_B64 }}
 
-      - name: Run make
+      - name: Run config dry-run
         shell: bash
         run: |
           set -euo pipefail
-          make -C install ${{ inputs.action }}
+          make -C install config-dry-run
 
       - name: Cleanup
         if: ${{ always() }}
