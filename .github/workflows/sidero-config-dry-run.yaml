@@ -1,4 +1,5 @@
 name: sidero-config-dry-run
+run-name: "sidero-config-dry-run • ${{ github.event_name }} • ${{ github.ref_name }}"
 
 on:
   pull_request:
@@ -8,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   config-dry-run:
@@ -86,10 +88,70 @@ jobs:
           TALOS_BOOTSTRAP_SECRETS_YAML_B64: ${{ secrets.TALOS_BOOTSTRAP_SECRETS_YAML_B64 }}
 
       - name: Run config dry-run
+        id: dryrun
         shell: bash
         run: |
           set -euo pipefail
-          make -C install config-dry-run
+          mkdir -p /tmp/talos-dry-run
+          set +e
+          make -C install config-dry-run 2>&1 | tee /tmp/talos-dry-run/raw.txt
+          status=${PIPESTATUS[0]}
+          set -e
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+
+      - name: Redact dry-run output
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/redact_talos_output.py < /tmp/talos-dry-run/raw.txt > /tmp/talos-dry-run/redacted.txt
+
+      - name: Build PR comment
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        env:
+          DRYRUN_STATUS: ${{ steps.dryrun.outputs.status }}
+        run: |
+          set -euo pipefail
+          comment=/tmp/talos-dry-run/comment.md
+          echo "<!-- talos-config-dry-run -->" > "$comment"
+          echo "### Talos config-dry-run output (redacted)" >> "$comment"
+          echo "Exit status: ${DRYRUN_STATUS}" >> "$comment"
+          echo "" >> "$comment"
+          max_bytes=60000
+          size=$(wc -c < /tmp/talos-dry-run/redacted.txt)
+          output=/tmp/talos-dry-run/redacted.txt
+          if [ "$size" -gt "$max_bytes" ]; then
+            head -c "$max_bytes" /tmp/talos-dry-run/redacted.txt > /tmp/talos-dry-run/redacted.trunc
+            echo -e "\n... (truncated) ..." >> /tmp/talos-dry-run/redacted.trunc
+            output=/tmp/talos-dry-run/redacted.trunc
+          fi
+          echo "```" >> "$comment"
+          cat "$output" >> "$comment"
+          echo "```" >> "$comment"
+
+      - name: Find existing comment
+        if: ${{ github.event_name == 'pull_request' }}
+        id: find-comment
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: "<!-- talos-config-dry-run -->"
+
+      - name: Post PR comment
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: /tmp/talos-dry-run/comment.md
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          edit-mode: replace
+
+      - name: Fail if dry-run failed
+        if: ${{ steps.dryrun.outputs.status != '0' }}
+        shell: bash
+        run: |
+          exit 1
 
       - name: Cleanup
         if: ${{ always() }}
