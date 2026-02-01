@@ -30,6 +30,7 @@ CLUSTER_CONFIG_WITH_DOCS ?= false
 CLUSTER_CONFIG_WITH_EXAMPLES ?= false
 CLUSTER_CONFIG_WITH_KUBESPAN ?= false
 CLUSTER_DNS_DOMAIN ?= cluster.local
+CLUSTER_VALIDATE_MODE ?= metal
 CLUSTER_ENDPOINT ?= https://$(CLUSTER_NODE_IP):6443
 CLUSTER_SECRETS_FILE ?= secrets.yaml
 CLUSTER_INSTALL_IMAGE ?= $(CLUSTER_INSTALL_IMAGE_BASE):$(CLUSTER_TALOS_VERSION)
@@ -50,10 +51,10 @@ GEN_CONFIG_COMMON_FLAGS = \
 	--with-secrets $(CLUSTER_SECRETS_FILE)
 
 .PHONY: help prepare-output-dir check-tools check-env \
-	config config-dry-run install apply upgrade upgrade-k8s secrets clean \
+	config config-dry-run validate install apply upgrade upgrade-k8s secrets clean \
 	talosctl-gen-secrets talosctl-gen-config-controlplane talosctl-gen-config-worker \
 	talosctl-gen-config-talosconfig talosctl-gen-config \
-	talosctl-apply-config-dry-run talosctl-apply-config talosctl-apply-config-and-bootstrap \
+	validate-configs talosctl-apply-config-dry-run talosctl-apply-config talosctl-apply-config-and-bootstrap \
 	talosctl-upgrade talosctl-upgrade-k8s clean-configs
 
 help:
@@ -63,6 +64,7 @@ help:
 		'Use-case targets:' \
 		'  config          Generate controlplane/worker/talosconfig' \
 		'  config-dry-run  Dry-run apply controlplane config' \
+		'  validate        Generate and validate controlplane/worker configs' \
 		'  install         Apply config and bootstrap (Day0)' \
 		'  apply           Apply controlplane config (Day2 changes)' \
 		'  upgrade         Upgrade Talos' \
@@ -86,6 +88,7 @@ help:
 		'Optional variables:' \
 		'  CLUSTER_TALOS_VERSION, CLUSTER_KUBERNETES_VERSION' \
 		'  CLUSTER_CONFIG_OUTPUT_DIR, CLUSTER_ADDITIONAL_SANS, CLUSTER_ENDPOINT' \
+		'  CLUSTER_VALIDATE_MODE (metal|cloud|container)' \
 		'  TALOS_NODE_ENDPOINT (Talos API node target)' \
 		'' \
 		'Env file:' \
@@ -136,7 +139,13 @@ talosctl-gen-config-talosconfig: check-env talosctl-gen-secrets prepare-output-d
 
 talosctl-gen-config: talosctl-gen-config-controlplane talosctl-gen-config-worker talosctl-gen-config-talosconfig
 
-talosctl-apply-config-dry-run: talosctl-gen-config
+validate-configs: check-tools
+	talosctl validate --config $(CLUSTER_CONFIG_OUTPUT_CONTROLPLANE) --mode $(CLUSTER_VALIDATE_MODE)
+	talosctl validate --config $(CLUSTER_CONFIG_OUTPUT_WORKER) --mode $(CLUSTER_VALIDATE_MODE)
+
+validate: talosctl-gen-config validate-configs
+
+talosctl-apply-config-dry-run: validate
 	talosctl \
 		--talosconfig $(CLUSTER_CONFIG_OUTPUT_TALOSCONFIG) \
 		--nodes $(TALOS_NODE_ENDPOINT) apply-config --dry-run -f $(CLUSTER_CONFIG_OUTPUT_CONTROLPLANE)
@@ -172,7 +181,7 @@ talosctl-upgrade-k8s: check-tools
 clean-configs:
 	rm -f $(CLUSTER_CONFIG_OUTPUT_CONTROLPLANE) $(CLUSTER_CONFIG_OUTPUT_WORKER) $(CLUSTER_CONFIG_OUTPUT_TALOSCONFIG)
 
-config: talosctl-gen-config
+config: validate
 
 config-dry-run: talosctl-apply-config-dry-run
 
