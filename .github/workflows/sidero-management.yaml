@@ -1,0 +1,99 @@
+name: sidero-management
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Management action"
+        required: true
+        type: choice
+        options:
+          - config
+          - config-dry-run
+          - install
+          - apply
+          - upgrade
+          - upgrade-k8s
+
+permissions:
+  contents: read
+
+jobs:
+  manage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read versions
+        id: versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          talos_version=$(awk -F'= ' '/^CLUSTER_TALOS_VERSION/ {print $2}' install/versions.mk | tr -d ' ')
+          if [ -z "$talos_version" ]; then
+            echo "CLUSTER_TALOS_VERSION missing in install/versions.mk" >&2
+            exit 1
+          fi
+          echo "talos_version=$talos_version" >> "$GITHUB_OUTPUT"
+
+      - name: Install talosctl
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sSL -o /usr/local/bin/talosctl "https://github.com/siderolabs/talos/releases/download/${{ steps.versions.outputs.talos_version }}/talosctl-linux-amd64"
+          chmod +x /usr/local/bin/talosctl
+          talosctl version --client
+
+      - name: Create env file
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${TALOS_PUBLIC_ENDPOINT:?Missing TALOS_PUBLIC_ENDPOINT GitHub variable}"
+          cat > install/.env <<EOF
+          CLUSTER_NAME=${CLUSTER_NAME}
+          CLUSTER_NODE_IP=${CLUSTER_NODE_IP}
+          CLUSTER_INSTALL_DISK=${CLUSTER_INSTALL_DISK}
+          CLUSTER_INSTALL_IMAGE_BASE=${CLUSTER_INSTALL_IMAGE_BASE}
+          TALOS_NODE_ENDPOINT=${TALOS_PUBLIC_ENDPOINT}
+          EOF
+        env:
+          CLUSTER_NAME: ${{ vars.CLUSTER_NAME }}
+          CLUSTER_NODE_IP: ${{ vars.CLUSTER_NODE_IP }}
+          CLUSTER_INSTALL_DISK: ${{ vars.CLUSTER_INSTALL_DISK }}
+          CLUSTER_INSTALL_IMAGE_BASE: ${{ vars.CLUSTER_INSTALL_IMAGE_BASE }}
+          TALOS_PUBLIC_ENDPOINT: ${{ vars.TALOS_PUBLIC_ENDPOINT }}
+
+      - name: Write talosconfig
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' "$TALOSCONFIG_B64" | base64 --decode > install/talosconfig
+          chmod 600 install/talosconfig
+          talosctl --talosconfig install/talosconfig config endpoint "$TALOS_PUBLIC_ENDPOINT"
+          talosctl --talosconfig install/talosconfig config node "$TALOS_PUBLIC_ENDPOINT"
+        env:
+          TALOS_PUBLIC_ENDPOINT: ${{ vars.TALOS_PUBLIC_ENDPOINT }}
+          TALOSCONFIG_B64: ${{ secrets.TALOSCONFIG_B64 }}
+
+      - name: Write secrets
+        if: ${{ contains(fromJson('["config","config-dry-run","install","apply"]'), inputs.action) }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' "$TALOS_BOOTSTRAP_SECRETS_YAML_B64" | base64 --decode > install/secrets.yaml
+          chmod 600 install/secrets.yaml
+        env:
+          TALOS_BOOTSTRAP_SECRETS_YAML_B64: ${{ secrets.TALOS_BOOTSTRAP_SECRETS_YAML_B64 }}
+
+      - name: Run make
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -C install ${{ inputs.action }}
+
+      - name: Cleanup
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          rm -f install/talosconfig install/secrets.yaml install/.env
