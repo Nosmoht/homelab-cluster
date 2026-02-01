@@ -1,4 +1,5 @@
 name: sidero-config-dry-run
+run-name: "sidero-config-dry-run • ${{ github.event_name }} • ${{ github.ref_name }}"
 
 on:
   pull_request:
@@ -137,9 +138,9 @@ jobs:
             echo -e "\n... (truncated) ..." >> /tmp/talos-dry-run/redacted.trunc
             output=/tmp/talos-dry-run/redacted.trunc
           fi
-          echo "```" >> "$comment"
+          printf '%s\n' '```' >> "$comment"
           cat "$output" >> "$comment"
-          echo "```" >> "$comment"
+          printf '%s\n' '```' >> "$comment"
 
       - name: Find existing comment
         if: ${{ github.event_name == 'pull_request' }}
