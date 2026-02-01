@@ -1,0 +1,11 @@
+machine:
+  install:
+    extraKernelArgs:
+      - cpufreq.default_governor=performance
+      - net.ifnames=0
+  kubelet:
+    extraArgs:
+      rotate-server-certificates: true
+    nodeIP:
+      validSubnets:
+        - 10.0.0.0/24

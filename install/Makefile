@@ -1,0 +1,189 @@
+MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+ENV_FILE ?= $(MAKEFILE_DIR).env
+ENV_EXAMPLE ?= $(MAKEFILE_DIR).env.example
+
+ENV_FILE_USED :=
+ifneq ("$(wildcard $(ENV_FILE))","")
+ENV_FILE_USED := $(ENV_FILE)
+include $(ENV_FILE)
+else ifneq ("$(wildcard $(ENV_EXAMPLE))","")
+ENV_FILE_USED := $(ENV_EXAMPLE)
+include $(ENV_EXAMPLE)
+$(info Using $(ENV_EXAMPLE); copy to $(ENV_FILE) to customize)
+endif
+
+include $(MAKEFILE_DIR)versions.mk
+
+.DEFAULT_GOAL := help
+
+CLUSTER_NAME ?=
+CLUSTER_NODE_IP ?=
+CLUSTER_INSTALL_DISK ?=
+CLUSTER_INSTALL_IMAGE_BASE ?=
+
+CLUSTER_ADDITIONAL_SANS ?= $(CLUSTER_NODE_IP)
+CLUSTER_CONFIG_OUTPUT_CONTROLPLANE ?= $(CLUSTER_CONFIG_OUTPUT_DIR)/controlplane.yaml
+CLUSTER_CONFIG_OUTPUT_DIR ?= .
+CLUSTER_CONFIG_OUTPUT_TALOSCONFIG ?= $(CLUSTER_CONFIG_OUTPUT_DIR)/talosconfig
+CLUSTER_CONFIG_OUTPUT_WORKER ?= $(CLUSTER_CONFIG_OUTPUT_DIR)/worker.yaml
+CLUSTER_CONFIG_WITH_DOCS ?= false
+CLUSTER_CONFIG_WITH_EXAMPLES ?= false
+CLUSTER_CONFIG_WITH_KUBESPAN ?= false
+CLUSTER_DNS_DOMAIN ?= cluster.local
+CLUSTER_ENDPOINT ?= https://$(CLUSTER_NODE_IP):6443
+CLUSTER_SECRETS_FILE ?= secrets.yaml
+CLUSTER_INSTALL_IMAGE ?= $(CLUSTER_INSTALL_IMAGE_BASE):$(CLUSTER_TALOS_VERSION)
+TALOS_NODE_ENDPOINT ?= $(CLUSTER_NODE_IP)
+
+GEN_CONFIG_COMMON_FLAGS = \
+	--additional-sans $(CLUSTER_ADDITIONAL_SANS) \
+	--config-patch @patches/common.yaml \
+	--dns-domain $(CLUSTER_DNS_DOMAIN) \
+	--force \
+	--install-disk $(CLUSTER_INSTALL_DISK) \
+	--install-image $(CLUSTER_INSTALL_IMAGE) \
+	--kubernetes-version $(CLUSTER_KUBERNETES_VERSION) \
+	--talos-version $(CLUSTER_TALOS_VERSION) \
+	--with-docs=$(CLUSTER_CONFIG_WITH_DOCS) \
+	--with-examples=$(CLUSTER_CONFIG_WITH_EXAMPLES) \
+	--with-kubespan=$(CLUSTER_CONFIG_WITH_KUBESPAN) \
+	--with-secrets $(CLUSTER_SECRETS_FILE)
+
+.PHONY: help prepare-output-dir check-tools check-env \
+	config config-dry-run install apply upgrade upgrade-k8s secrets clean \
+	talosctl-gen-secrets talosctl-gen-config-controlplane talosctl-gen-config-worker \
+	talosctl-gen-config-talosconfig talosctl-gen-config \
+	talosctl-apply-config-dry-run talosctl-apply-config talosctl-apply-config-and-bootstrap \
+	talosctl-upgrade talosctl-upgrade-k8s clean-configs
+
+help:
+	@printf '%s\n' \
+		'Usage: make <target>' \
+		'' \
+		'Use-case targets:' \
+		'  config          Generate controlplane/worker/talosconfig' \
+		'  config-dry-run  Dry-run apply controlplane config' \
+		'  install         Apply config and bootstrap (Day0)' \
+		'  apply           Apply controlplane config (Day2 changes)' \
+		'  upgrade         Upgrade Talos' \
+		'  upgrade-k8s     Upgrade Kubernetes' \
+		'  secrets         Generate install/secrets.yaml' \
+		'  clean           Remove generated configs (not secrets)' \
+		'' \
+		'Low-level targets:' \
+		'  talosctl-gen-secrets                Generate install/secrets.yaml' \
+		'  talosctl-gen-config                 Generate controlplane/worker/talosconfig' \
+		'  talosctl-apply-config-dry-run        Dry-run apply controlplane config' \
+		'  talosctl-apply-config                Apply controlplane config' \
+		'  talosctl-apply-config-and-bootstrap  Apply config and bootstrap' \
+		'  talosctl-upgrade                     Upgrade Talos' \
+		'  talosctl-upgrade-k8s                 Upgrade Kubernetes' \
+		'  clean-configs                        Remove generated configs (not secrets)' \
+		'' \
+		'Common variables (set via ENV_FILE):' \
+		'  CLUSTER_NAME, CLUSTER_NODE_IP, CLUSTER_INSTALL_DISK, CLUSTER_INSTALL_IMAGE_BASE' \
+		'' \
+		'Optional variables:' \
+		'  CLUSTER_TALOS_VERSION, CLUSTER_KUBERNETES_VERSION' \
+		'  CLUSTER_CONFIG_OUTPUT_DIR, CLUSTER_ADDITIONAL_SANS, CLUSTER_ENDPOINT' \
+		'  TALOS_NODE_ENDPOINT (Talos API node target)' \
+		'' \
+		'Env file:' \
+		'  ENV_FILE (default: install/.env)'
+
+prepare-output-dir:
+	@mkdir -p $(CLUSTER_CONFIG_OUTPUT_DIR)
+
+check-tools:
+	@command -v talosctl >/dev/null 2>&1 || { echo "talosctl not found in PATH"; exit 1; }
+	@talosctl version --client >/dev/null 2>&1 || true
+
+check-env:
+	@$(if $(ENV_FILE_USED),,$(error Missing env file: create $(ENV_FILE) (see $(ENV_EXAMPLE))))
+	@$(foreach var,CLUSTER_NAME CLUSTER_NODE_IP CLUSTER_INSTALL_DISK CLUSTER_INSTALL_IMAGE_BASE,\
+		$(if $($(var)),,$(error Missing required variable: $(var)))\
+	)
+
+talosctl-gen-secrets: check-tools
+	@test -f $(MAKEFILE_DIR).gitignore && grep -q '^secrets\.yaml$$' $(MAKEFILE_DIR).gitignore || { echo "install/.gitignore must include secrets.yaml"; exit 1; }
+	test -f $(CLUSTER_SECRETS_FILE) || talosctl gen secrets \
+		--output-file $(CLUSTER_SECRETS_FILE) \
+		--talos-version $(CLUSTER_TALOS_VERSION)
+	@test -f $(CLUSTER_SECRETS_FILE)
+	@chmod 600 $(CLUSTER_SECRETS_FILE)
+
+talosctl-gen-config-controlplane: check-env talosctl-gen-secrets prepare-output-dir
+	talosctl gen config $(CLUSTER_NAME) $(CLUSTER_ENDPOINT) \
+		$(GEN_CONFIG_COMMON_FLAGS) \
+		--config-patch-control-plane @patches/controlplane.yaml \
+		--output $(CLUSTER_CONFIG_OUTPUT_CONTROLPLANE) \
+		--output-types controlplane
+
+talosctl-gen-config-worker: check-env talosctl-gen-secrets prepare-output-dir
+	talosctl gen config $(CLUSTER_NAME) $(CLUSTER_ENDPOINT) \
+		$(GEN_CONFIG_COMMON_FLAGS) \
+		--config-patch-worker @patches/worker.yaml \
+		--output $(CLUSTER_CONFIG_OUTPUT_WORKER) \
+		--output-types worker
+
+talosctl-gen-config-talosconfig: check-env talosctl-gen-secrets prepare-output-dir
+	talosctl gen config $(CLUSTER_NAME) $(CLUSTER_ENDPOINT) \
+		$(GEN_CONFIG_COMMON_FLAGS) \
+		--output $(CLUSTER_CONFIG_OUTPUT_TALOSCONFIG) \
+		--output-types talosconfig && \
+	talosctl --talosconfig $(CLUSTER_CONFIG_OUTPUT_TALOSCONFIG) config endpoint $(CLUSTER_NODE_IP)
+	talosctl --talosconfig $(CLUSTER_CONFIG_OUTPUT_TALOSCONFIG) config node $(CLUSTER_NODE_IP)
+
+talosctl-gen-config: talosctl-gen-config-controlplane talosctl-gen-config-worker talosctl-gen-config-talosconfig
+
+talosctl-apply-config-dry-run: talosctl-gen-config
+	talosctl \
+		--talosconfig $(CLUSTER_CONFIG_OUTPUT_TALOSCONFIG) \
+		--nodes $(TALOS_NODE_ENDPOINT) apply-config --dry-run -f $(CLUSTER_CONFIG_OUTPUT_CONTROLPLANE)
+
+talosctl-apply-config: talosctl-gen-config
+	talosctl \
+		--talosconfig $(CLUSTER_CONFIG_OUTPUT_TALOSCONFIG) \
+		--nodes $(TALOS_NODE_ENDPOINT) apply-config -f $(CLUSTER_CONFIG_OUTPUT_CONTROLPLANE)
+
+talosctl-apply-config-and-bootstrap: talosctl-gen-config
+	talosctl -n $(TALOS_NODE_ENDPOINT) apply-config --insecure -f $(CLUSTER_CONFIG_OUTPUT_CONTROLPLANE) && \
+	talosctl \
+		--talosconfig $(CLUSTER_CONFIG_OUTPUT_TALOSCONFIG) \
+		--nodes $(TALOS_NODE_ENDPOINT) bootstrap
+
+talosctl-upgrade: check-tools
+	talosctl \
+		--talosconfig $(CLUSTER_CONFIG_OUTPUT_TALOSCONFIG) \
+		--nodes $(TALOS_NODE_ENDPOINT) \
+		upgrade \
+		--image $(CLUSTER_INSTALL_IMAGE) \
+		--preserve=true
+
+talosctl-upgrade-k8s: check-tools
+	talosctl \
+		--talosconfig $(CLUSTER_CONFIG_OUTPUT_TALOSCONFIG) \
+		--nodes $(TALOS_NODE_ENDPOINT) \
+		upgrade-k8s \
+		--to $(CLUSTER_KUBERNETES_VERSION) \
+		--with-docs=$(CLUSTER_CONFIG_WITH_DOCS) \
+		--with-examples=$(CLUSTER_CONFIG_WITH_EXAMPLES)
+
+clean-configs:
+	rm -f $(CLUSTER_CONFIG_OUTPUT_CONTROLPLANE) $(CLUSTER_CONFIG_OUTPUT_WORKER) $(CLUSTER_CONFIG_OUTPUT_TALOSCONFIG)
+
+config: talosctl-gen-config
+
+config-dry-run: talosctl-apply-config-dry-run
+
+install: talosctl-apply-config-and-bootstrap
+
+apply: talosctl-apply-config
+
+upgrade: talosctl-upgrade
+
+upgrade-k8s: talosctl-upgrade-k8s
+
+secrets: talosctl-gen-secrets
+
+clean: clean-configs
