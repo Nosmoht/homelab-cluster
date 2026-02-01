@@ -2,5 +2,21 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "prConcurrentLimit": 2,
+  "regexManagers": [
+    {
+      "fileMatch": [
+        "^install/versions\\.mk$"
+      ],
+      "matchStrings": [
+        "CLUSTER_TALOS_VERSION\\s*\\?=\\s*(?<currentValue>v?\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "siderolabs/talos",
+      "datasourceTemplate": "github-tags",
+      "versioningTemplate": "semver",
+      "extractVersionTemplate": "^v?(?<version>.*)$",
+      "allowedVersions": "/^v?\\d+\\.\\d+\\.\\d+$/"
+    }
   ]
 }
