@@ -1,0 +1,81 @@
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+kind: TalosControlPlane
+metadata:
+  name: homelab-cp
+spec:
+  controlPlaneConfig:
+    controlplane:
+      configPatches:
+        - op: add
+          path: /cluster/allowSchedulingOnControlPlanes
+          value: true
+        - op: add
+          path: /cluster/extraManifests
+          value:
+            - https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/v0.10.2/deploy/standalone-install.yaml
+            - https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.8.1/components.yaml
+        - op: replace
+          path: /machine/install/image
+          value: factory.talos.dev/installer/797d93756de3d25be5830c940abc717e72ca4c7130c70ab292b7a337888f322a:v1.12.2
+        - op: add
+          path: /machine/kubelet/extraArgs
+          value:
+            rotate-server-certificates: true
+        - op: add
+          path: /machine/network/disableSearchDomain
+          value: true
+        - op: replace
+          path: /machine/network/interfaces
+          value:
+            - interface: br0
+              dhcp: true
+              bridge:
+                stp:
+                  enabled: true
+                interfaces:
+                  - eth0
+              vip:
+                ip: 10.0.0.10
+      generateType: controlplane
+      talosVersion: v1.12.2
+    init:
+      configPatches:
+        - op: add
+          path: /cluster/allowSchedulingOnControlPlanes
+          value: true
+        - op: add
+          path: /cluster/extraManifests
+          value:
+            - https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/v0.10.2/deploy/standalone-install.yaml
+            - https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.8.1/components.yaml
+        - op: replace
+          path: /machine/install/image
+          value: factory.talos.dev/installer/797d93756de3d25be5830c940abc717e72ca4c7130c70ab292b7a337888f322a:v1.12.2
+        - op: add
+          path: /machine/kubelet/extraArgs
+          value:
+            rotate-server-certificates: true
+        - op: add
+          path: /machine/network/disableSearchDomain
+          value: true
+        - op: replace
+          path: /machine/network/interfaces
+          value:
+            - interface: br0
+              dhcp: true
+              bridge:
+                stp:
+                  enabled: true
+                interfaces:
+                  - eth0
+              vip:
+                ip: 10.0.0.10
+      generateType: controlplane
+      talosVersion: v1.12.2
+  infrastructureTemplate:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+    kind: MetalMachineTemplate
+    name: homelab-cp
+    namespace: default
+  replicas: 3
+  version: v1.35.0

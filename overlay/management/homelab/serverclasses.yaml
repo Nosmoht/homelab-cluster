@@ -1,0 +1,93 @@
+apiVersion: metal.sidero.dev/v1alpha2
+kind: ServerClass
+metadata:
+  name: homelab-cp
+spec:
+  configPatches:
+    - op: replace
+      path: /machine/install/disk
+      value: /dev/sda
+    - op: add
+      path: /machine/install/extraKernelArgs
+      value:
+        - cpufreq.default_governor=performance
+        - net.ifnames=0
+    - op: replace
+      path: /machine/network/nameservers
+      value:
+        - 10.0.0.1
+    - op: replace
+      path: /machine/time
+      value:
+        servers:
+          - 10.0.0.1
+    - op: replace
+      path: /machine/network/extraHostEntries
+      value:
+        - ip: 172.174.35.21
+          aliases:
+            - discovery.talos.dev
+        - ip: 162.159.200.1
+          aliases:
+            - time.cloudflare.com
+  environmentRef:
+    namespace: default
+    name: homelab  
+  qualifiers:
+    hardware:
+      - compute:
+          processors:
+            - productName: Intel(R) Core(TM) i5-7400T CPU @ 2.40GHz
+        system:
+          family: ThinkCentre M710q
+          manufacturer: LENOVO
+---
+apiVersion: metal.sidero.dev/v1alpha2
+kind: ServerClass
+metadata:
+  name: homelab-worker
+spec:
+  configPatches:
+    - op: replace
+      path: /machine/install/disk
+      value: /dev/sda
+    - op: add
+      path: /machine/install/extraKernelArgs
+      value:
+        - cpufreq.default_governor=performance
+        - net.ifnames=0
+    - op: replace
+      path: /machine/network/nameservers
+      value:
+        - 10.0.0.1
+    - op: replace
+      path: /machine/time
+      value:
+        servers:
+          - 10.0.0.1
+    - op: replace
+      path: /machine/network/extraHostEntries
+      value:
+        - ip: 172.174.35.21
+          aliases:
+            - discovery.talos.dev
+        - ip: 162.159.200.1
+          aliases:
+            - time.cloudflare.com
+  environmentRef:
+    namespace: default
+    name: homelab  
+  qualifiers:
+    hardware:
+      - compute:
+          processors:
+            - productName: Intel(R) Core(TM) i3-6100T CPU @ 3.20GHz
+        system:
+          family: ThinkCentre M710q
+          manufacturer: LENOVO
+      - compute:
+          processors:
+            - productName: Intel(R) Core(TM) i5-7500T CPU @ 2.70GHz
+        system:
+          family: ThinkCentre M710q
+          manufacturer: LENOVO
