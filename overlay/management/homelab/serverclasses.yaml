@@ -3,15 +3,14 @@ kind: ServerClass
 metadata:
   name: homelab-cp
 spec:
-  configPatches:
-    - op: replace
-      path: /machine/install/disk
-      value: /dev/sda
-    - op: add
-      path: /machine/install/extraKernelArgs
-      value:
-        - cpufreq.default_governor=performance
-        - net.ifnames=0
+  strategicPatches:
+    - |
+      machine:
+        install:
+          disk: /dev/sda
+          extraKernelArgs:
+            - cpufreq.default_governor=performance
+            - net.ifnames=0
   environmentRef:
     namespace: default
     name: homelab  
@@ -29,15 +28,14 @@ kind: ServerClass
 metadata:
   name: homelab-worker
 spec:
-  configPatches:
-    - op: replace
-      path: /machine/install/disk
-      value: /dev/sda
-    - op: add
-      path: /machine/install/extraKernelArgs
-      value:
-        - cpufreq.default_governor=performance
-        - net.ifnames=0
+  strategicPatches:
+    - |
+      machine:
+        install:
+          disk: /dev/sda
+          extraKernelArgs:
+            - cpufreq.default_governor=performance
+            - net.ifnames=0
   environmentRef:
     namespace: default
     name: homelab  
