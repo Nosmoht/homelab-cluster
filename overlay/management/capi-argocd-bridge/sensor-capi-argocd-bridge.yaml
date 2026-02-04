@@ -1,0 +1,215 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Sensor
+metadata:
+  name: capi-argocd-bridge
+spec:
+  template:
+    serviceAccountName: capi-argocd-bridge
+  dependencies:
+    - name: kubeconfig-upsert
+      eventSourceName: capi-kubeconfig
+      eventName: kubeconfig-upsert
+      filters:
+        exprs:
+          - expr: secretName =~ ".*-kubeconfig$"
+            fields:
+              - name: secretName
+                path: body.metadata.name
+          - expr: secretType == "cluster.x-k8s.io/secret"
+            fields:
+              - name: secretType
+                path: body.type
+    - name: kubeconfig-delete
+      eventSourceName: capi-kubeconfig
+      eventName: kubeconfig-delete
+      filters:
+        exprs:
+          - expr: secretName =~ ".*-kubeconfig$"
+            fields:
+              - name: secretName
+                path: body.metadata.name
+          - expr: secretType == "cluster.x-k8s.io/secret"
+            fields:
+              - name: secretType
+                path: body.type
+  triggers:
+    - template:
+        name: upsert-argocd-cluster-secret
+        conditions: "kubeconfig-upsert"
+        argoWorkflow:
+          group: argoproj.io
+          version: v1alpha1
+          resource: workflows
+          operation: submit
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: capi-argocd-bridge-upsert-
+                namespace: argo-events
+              spec:
+                serviceAccountName: capi-argocd-bridge
+                entrypoint: upsert
+                ttlStrategy:
+                  secondsAfterSuccess: 300
+                  secondsAfterFailure: 600
+                arguments:
+                  parameters:
+                    - name: sourceNamespace
+                      value: default
+                    - name: sourceSecretName
+                      value: placeholder-kubeconfig
+                templates:
+                  - name: upsert
+                    inputs:
+                      parameters:
+                        - name: sourceNamespace
+                        - name: sourceSecretName
+                    container:
+                      image: bitnami/kubectl:1.35.0
+                      command: ["/bin/sh", "-ceu"]
+                      args:
+                        - |
+                          SOURCE_NAMESPACE="{{inputs.parameters.sourceNamespace}}"
+                          SOURCE_SECRET_NAME="{{inputs.parameters.sourceSecretName}}"
+
+                          case "${SOURCE_SECRET_NAME}" in
+                            *-kubeconfig) ;;
+                            *)
+                              echo "ignore secret ${SOURCE_NAMESPACE}/${SOURCE_SECRET_NAME}"
+                              exit 0
+                              ;;
+                          esac
+
+                          KUBECONFIG_B64="$(kubectl -n "${SOURCE_NAMESPACE}" get secret "${SOURCE_SECRET_NAME}" -o jsonpath='{.data.value}' 2>/dev/null || true)"
+                          if [ -z "${KUBECONFIG_B64}" ]; then
+                            echo "kubeconfig secret missing for ${SOURCE_NAMESPACE}/${SOURCE_SECRET_NAME}, skipping"
+                            exit 0
+                          fi
+
+                          TMP_KUBECONFIG="$(mktemp)"
+                          trap 'rm -f "${TMP_KUBECONFIG}"' EXIT
+                          printf '%s' "${KUBECONFIG_B64}" | base64 -d > "${TMP_KUBECONFIG}"
+
+                          SERVER="$(kubectl config view --kubeconfig "${TMP_KUBECONFIG}" --raw -o jsonpath='{.clusters[0].cluster.server}')"
+                          CA_DATA="$(kubectl config view --kubeconfig "${TMP_KUBECONFIG}" --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')"
+                          CERT_DATA="$(kubectl config view --kubeconfig "${TMP_KUBECONFIG}" --raw -o jsonpath='{.users[0].user.client-certificate-data}')"
+                          KEY_DATA="$(kubectl config view --kubeconfig "${TMP_KUBECONFIG}" --raw -o jsonpath='{.users[0].user.client-key-data}')"
+
+                          if [ -z "${SERVER}" ]; then
+                            echo "server URL missing in kubeconfig ${SOURCE_NAMESPACE}/${SOURCE_SECRET_NAME}"
+                            exit 1
+                          fi
+
+                          CLUSTER_NAME="${SOURCE_SECRET_NAME%-kubeconfig}"
+
+                          sanitize() {
+                            echo "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9.-]+/-/g; s/^-+//; s/-+$//'
+                          }
+
+                          TARGET_SECRET_NAME="cluster-$(sanitize "${SOURCE_NAMESPACE}")-$(sanitize "${CLUSTER_NAME}")"
+
+                          CONFIG_JSON=$(cat <<JSON
+                          {"tlsClientConfig":{"insecure":false,"caData":"${CA_DATA}","certData":"${CERT_DATA}","keyData":"${KEY_DATA}"}}
+                          JSON
+                          )
+
+                          cat <<YAML | kubectl apply -f -
+                          apiVersion: v1
+                          kind: Secret
+                          metadata:
+                            name: ${TARGET_SECRET_NAME}
+                            namespace: argocd
+                            labels:
+                              argocd.argoproj.io/secret-type: cluster
+                              homelab.ntbc.io/managed-by: capi-argocd-bridge
+                              homelab.ntbc.io/apps-enabled: "false"
+                              cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+                              cluster.x-k8s.io/cluster-namespace: ${SOURCE_NAMESPACE}
+                          type: Opaque
+                          stringData:
+                            name: ${CLUSTER_NAME}
+                            server: ${SERVER}
+                            config: |
+                              ${CONFIG_JSON}
+                          YAML
+
+                          echo "upserted argocd cluster secret ${TARGET_SECRET_NAME} for ${SOURCE_NAMESPACE}/${SOURCE_SECRET_NAME}"
+          parameters:
+            - src:
+                dependencyName: kubeconfig-upsert
+                dataKey: body.metadata.namespace
+              dest: spec.arguments.parameters.0.value
+            - src:
+                dependencyName: kubeconfig-upsert
+                dataKey: body.metadata.name
+              dest: spec.arguments.parameters.1.value
+    - template:
+        name: delete-argocd-cluster-secret
+        conditions: "kubeconfig-delete"
+        argoWorkflow:
+          group: argoproj.io
+          version: v1alpha1
+          resource: workflows
+          operation: submit
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: capi-argocd-bridge-delete-
+                namespace: argo-events
+              spec:
+                serviceAccountName: capi-argocd-bridge
+                entrypoint: delete
+                ttlStrategy:
+                  secondsAfterSuccess: 300
+                  secondsAfterFailure: 600
+                arguments:
+                  parameters:
+                    - name: sourceNamespace
+                      value: default
+                    - name: sourceSecretName
+                      value: placeholder-kubeconfig
+                templates:
+                  - name: delete
+                    inputs:
+                      parameters:
+                        - name: sourceNamespace
+                        - name: sourceSecretName
+                    container:
+                      image: bitnami/kubectl:1.35.0
+                      command: ["/bin/sh", "-ceu"]
+                      args:
+                        - |
+                          SOURCE_NAMESPACE="{{inputs.parameters.sourceNamespace}}"
+                          SOURCE_SECRET_NAME="{{inputs.parameters.sourceSecretName}}"
+
+                          case "${SOURCE_SECRET_NAME}" in
+                            *-kubeconfig) ;;
+                            *)
+                              echo "ignore secret ${SOURCE_NAMESPACE}/${SOURCE_SECRET_NAME}"
+                              exit 0
+                              ;;
+                          esac
+
+                          CLUSTER_NAME="${SOURCE_SECRET_NAME%-kubeconfig}"
+
+                          sanitize() {
+                            echo "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9.-]+/-/g; s/^-+//; s/-+$//'
+                          }
+
+                          TARGET_SECRET_NAME="cluster-$(sanitize "${SOURCE_NAMESPACE}")-$(sanitize "${CLUSTER_NAME}")"
+                          kubectl -n argocd delete secret "${TARGET_SECRET_NAME}" --ignore-not-found=true
+
+                          echo "deleted argocd cluster secret ${TARGET_SECRET_NAME}"
+          parameters:
+            - src:
+                dependencyName: kubeconfig-delete
+                dataKey: body.metadata.namespace
+              dest: spec.arguments.parameters.0.value
+            - src:
+                dependencyName: kubeconfig-delete
+                dataKey: body.metadata.name
+              dest: spec.arguments.parameters.1.value

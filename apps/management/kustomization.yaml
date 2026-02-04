@@ -4,6 +4,9 @@ resources:
   - project.yaml
   - workload-fleet-project.yaml
   - argocd.yaml
+  - argo-workflows.yaml
+  - argo-events.yaml
+  - capi-argocd-bridge.yaml
   - cert-manager.yaml
   - workload-applicationset.yaml
   - cluster-api-operator.yaml

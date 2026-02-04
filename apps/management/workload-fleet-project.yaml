@@ -9,8 +9,8 @@ spec:
   sourceRepos:
     - https://github.com/Nosmoht/homelab-apps.git
   destinations:
-    - name: in-cluster
-      namespace: argocd
+    - server: "*"
+      namespace: "*"
   clusterResourceWhitelist:
     - group: "*"
       kind: "*"
