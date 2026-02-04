@@ -64,22 +64,25 @@ spec:
             capabilities:
               add:
                 - SYS_NICE
-          # check for lifetime liveness, restarts if dead
-          # livenessProbe:
-          #   exec:
-          #     command:
-          #       - /bin/sh
-          #       - -c
-          #       - /usr/bin/chronyc dump | grep 200
-          #   initialDelaySeconds: 5
-          #   periodSeconds: 10
-          # check for initial readiness
-          # readinessProbe:
-          #   exec:
-          #     command:
-          #       - cat
-          #       - /etc/chrony/chrony.conf
-          #   initialDelaySeconds: 3
-          #   periodSeconds: 3
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -ec
+                - pidof chronyd >/dev/null
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -ec
+                - /usr/bin/chronyc tracking >/dev/null
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
       restartPolicy: Always
       dnsPolicy: ClusterFirstWithHostNet
