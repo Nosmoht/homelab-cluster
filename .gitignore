@@ -1,0 +1,8 @@
+# Local kube/talos client configs
+*kubeconfig
+kubeconfig*
+*talosconfig
+talosconfig*
+
+# Local helper file used during initial homelab manifest generation
+overlay/management/homelab/Makefile

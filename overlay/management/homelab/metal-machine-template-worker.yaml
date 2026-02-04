@@ -1,0 +1,12 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+kind: MetalMachineTemplate
+metadata:
+  name: homelab-workers
+spec:
+  template:
+    spec:
+      serverClassRef:
+        apiVersion: metal.sidero.dev/v1alpha2
+        kind: ServerClass
+        name: homelab-worker
+        namespace: default
