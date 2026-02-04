@@ -22,10 +22,11 @@ Current reconciliation setup:
   upgrades fail with `ComponentsUpgradeError` (`requested v1beta1`).
 - Sync waves enforce dependency ordering:
   - wave `-2`: `AppProject/management`
+  - wave `-2`: `AppProject/workload-fleet`
   - wave `-1`: `argocd` (self-management app)
-  - wave `0`: operators and infra (`cert-manager-management`,
+  - wave `0`: operators and infra (`cert-manager`,
     `cluster-api-operator`, `metallb-operator`, `chrony`,
-    `dnsmasq-controller`)
+    `dnsmasq-controller`, `workload-clusters`)
   - wave `1`: dependent apps (`cluster-api`, `metallb`)
 
 Inside the `cluster-api` app, provider installation is also wave-ordered:
