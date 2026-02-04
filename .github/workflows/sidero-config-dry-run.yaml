@@ -4,8 +4,12 @@ run-name: "sidero-config-dry-run • ${{ github.event_name }} • ${{ github.ref
 on:
   pull_request:
     branches: [main]
+    paths:
+      - "install/**"
   push:
     branches: [main]
+    paths:
+      - "install/**"
 
 permissions:
   contents: read
