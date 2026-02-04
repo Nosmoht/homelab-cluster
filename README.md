@@ -95,10 +95,11 @@ Key variables live in `install/.env`:
 - `install/`: bootstrap helpers (Makefile, patches, config generation)
 - `base/`: reusable Kustomize bases
 - `overlay/management/`: management cluster overlays and Argo CD apps
+- `docs/`: operational notes (for example `docs/dnsmasq-controller.md`,
+  `docs/chrony.md`)
 
 ## Contributing
 
 - Keep `install/` minimal and idempotent.
 - Use GitOps for Day2 changes.
 - Do not add plaintext secrets to the repo.
-

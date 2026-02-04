@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chrony
+spec:
+  selector:
+    matchLabels:
+      app: chrony
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: chrony
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      # scaled up deployment will go to different nodes
+      hostNetwork: true
+      nodeSelector:
+        kubernetes.io/hostname: sidero
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - chrony
+              topologyKey: "kubernetes.io/hostname"
+      volumes:
+        - name: config
+          configMap:
+            name: chrony
+      containers:
+        - name: chrony
+          image: cturra/ntp
+          command:
+            - /usr/sbin/chronyd
+            - -u
+            - chrony
+            - -d
+            - -x
+            - -L
+            - "0"
+            - -f
+            - /etc/chrony/chrony.conf
+          ports:
+            - containerPort: 123
+              protocol: UDP
+          resources:
+            requests:
+              memory: "24Mi"
+              cpu: "500m"
+            limits:
+              memory: "64Mi"
+              cpu: "1000m"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/chrony/chrony.conf
+              subPath: chrony.conf
+          # linux capabilities needed for setting time
+          securityContext:
+            capabilities:
+              add:
+                - SYS_NICE
+          # check for lifetime liveness, restarts if dead
+          # livenessProbe:
+          #   exec:
+          #     command:
+          #       - /bin/sh
+          #       - -c
+          #       - /usr/bin/chronyc dump | grep 200
+          #   initialDelaySeconds: 5
+          #   periodSeconds: 10
+          # check for initial readiness
+          # readinessProbe:
+          #   exec:
+          #     command:
+          #       - cat
+          #       - /etc/chrony/chrony.conf
+          #   initialDelaySeconds: 3
+          #   periodSeconds: 3
+      restartPolicy: Always
+      dnsPolicy: ClusterFirstWithHostNet
