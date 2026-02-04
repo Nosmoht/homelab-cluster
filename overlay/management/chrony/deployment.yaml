@@ -7,6 +7,9 @@ spec:
     matchLabels:
       app: chrony
   replicas: 1
+  # hostNetwork + UDP/123 means a second pod can't run in parallel on the same node
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
