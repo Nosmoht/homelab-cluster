@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dnsmasq-controller
+  namespace: argocd
+spec:
+  destination:
+    namespace: dnsmasq-controller
+    server: https://kubernetes.default.svc
+  project: management
+  source:
+    path: overlay/management/dnsmasq-controller
+    repoURL: git@github.com:Nosmoht/homelab-cluster.git
+    targetRevision: HEAD
+  syncPolicy:
+    automated: {}

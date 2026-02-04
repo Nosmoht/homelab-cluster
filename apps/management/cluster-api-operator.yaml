@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cluster-api-operator
+  namespace: argocd
+spec:
+  destination:
+    namespace: capi-operator-system
+    server: https://kubernetes.default.svc
+  project: management
+  source:
+    path: overlay/management/cluster-api-operator
+    repoURL: git@github.com:Nosmoht/homelab-cluster.git
+    targetRevision: HEAD
+  syncPolicy:
+    automated:
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
