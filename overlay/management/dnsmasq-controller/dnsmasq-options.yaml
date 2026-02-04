@@ -8,7 +8,7 @@ spec:
   controller: homelab
   options:
     - key: server
-      values: [10.0.0.1]
+      values: [192.168.2.1]
     - key: dhcp-range
       values: [10.0.0.0, static, infinite]
     - key: dhcp-match
