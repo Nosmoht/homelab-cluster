@@ -9,6 +9,10 @@ Current reconciliation setup:
   `management` AppProject does not exist yet.
 - `apps/management/project.yaml` creates the `management` AppProject in Git.
 - Child apps run with automated sync (`prune: true`, `selfHeal: true`).
+- `argocd` is self-managed from `overlay/management/argocd` and pinned to the
+  latest stable base under `base/argocd/`.
+- `argocd` uses sync option `Replace=true` to avoid client-side apply annotation
+  limits on Argo CD CRDs and to keep migration from manual bootstrap stable.
 - Retry policy is enabled on child apps to handle transient failures.
 - `cluster-api` app uses `SkipDryRunOnMissingResource=true` because
   `CoreProvider/BootstrapProvider/ControlPlaneProvider/InfrastructureProvider`
@@ -18,6 +22,7 @@ Current reconciliation setup:
   upgrades fail with `ComponentsUpgradeError` (`requested v1beta1`).
 - Sync waves enforce dependency ordering:
   - wave `-2`: `AppProject/management`
+  - wave `-1`: `argocd` (self-management app)
   - wave `0`: operators and infra (`cluster-api-operator`, `metallb-operator`,
     `chrony`, `dnsmasq-controller`)
   - wave `1`: dependent apps (`cluster-api`, `metallb`)
