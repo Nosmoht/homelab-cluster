@@ -24,6 +24,20 @@ kubectl --context admin@sidero -n cert-manager create secret generic google-clou
   --from-file=service-account-key.json=/path/to/service-account-key.json
 ```
 
+## Secret health-check
+
+Verify that the required secret exists and contains the expected key:
+
+```bash
+kubectl --context admin@sidero -n cert-manager get secret google-cloud-dns
+kubectl --context admin@sidero -n cert-manager get secret google-cloud-dns \
+  -o jsonpath='{.data.service-account-key\\.json}' | wc -c
+```
+
+The second command must return a value greater than `0`.
+
+CI enforces this baseline via workflow `cert-manager-secret-health`.
+
 ## Verification
 
 ```bash

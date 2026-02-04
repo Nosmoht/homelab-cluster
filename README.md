@@ -110,6 +110,8 @@ Key variables live in `install/.env`:
 
 - PRs and pushes to `main` run `make config-dry-run`.
 - The dry-run output is posted as a PR comment (redacted).
+- PRs and pushes to `main` also run `cert-manager-secret-health` for
+  cert-manager secret hygiene checks.
 - See `docs/ci.md` for details.
 
 ## Backup runbook

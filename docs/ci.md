@@ -8,6 +8,17 @@ The `sidero-config-dry-run` workflow runs `make config-dry-run` on PRs targeting
 For pull requests, it posts a comment with the redacted `talosctl apply-config --dry-run`
 output (starting at `Dry run summary:`) so changes are visible without opening logs.
 
+## cert-manager secret health
+
+The `cert-manager-secret-health` workflow validates cert-manager secret hygiene
+for management manifests on PRs to `main` and pushes to `main` (path-filtered):
+
+- the Cloud DNS key file is not tracked in Git
+- `.gitignore` protects `service-account-key.json`
+- no `secretGenerator` is used for cert-manager credentials
+- issuers reference `google-cloud-dns` with `service-account-key.json`
+- docs include secret creation and health-check commands
+
 ## Renovate updates
 
 Renovate is configured in `renovate.json` to update the Talos version pin
