@@ -27,6 +27,7 @@ spec:
             - --bind-interfaces
             - --interface=eth1
             - --except-interface=eth0
+            - --except-interface=lo
             - --bogus-priv
             - --domain-needed
             - --stop-dns-rebind
