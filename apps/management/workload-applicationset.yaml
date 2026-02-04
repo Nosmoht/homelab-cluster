@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: workload-clusters
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            homelab.ntbc.io/apps-enabled: "true"
+  template:
+    metadata:
+      name: workloads-{{.name}}
+      namespace: argocd
+      labels:
+        homelab.ntbc.io/generated-by: workload-clusters
+    spec:
+      project: workload-fleet
+      source:
+        repoURL: https://github.com/Nosmoht/homelab-apps.git
+        targetRevision: HEAD
+        path: apps
+      destination:
+        name: in-cluster
+        namespace: argocd
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true

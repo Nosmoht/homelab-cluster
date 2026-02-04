@@ -4,7 +4,7 @@ This cluster runs cert-manager for management-plane TLS (for example `argocd.hom
 
 ## GitOps source
 
-- Argo CD app: `cert-manager-management`
+- Argo CD app: `cert-manager`
 - App path: `overlay/management/cert-manager`
 - Base manifests: `base/cert-manager/v1.19.3`
 
@@ -27,7 +27,7 @@ kubectl --context admin@sidero -n cert-manager create secret generic google-clou
 ## Verification
 
 ```bash
-kubectl --context admin@sidero -n argocd get application cert-manager-management
+kubectl --context admin@sidero -n argocd get application cert-manager
 kubectl --context admin@sidero -n cert-manager get deploy
 kubectl --context admin@sidero get clusterissuer homelab homelab-staging
 kubectl --context admin@sidero get certificates.cert-manager.io -A
