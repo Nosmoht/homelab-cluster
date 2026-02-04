@@ -5,4 +5,4 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 spec:
-  version: v0.6.6
+  version: v0.6.11
