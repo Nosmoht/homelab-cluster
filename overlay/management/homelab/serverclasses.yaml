@@ -12,15 +12,6 @@ spec:
       value:
         - cpufreq.default_governor=performance
         - net.ifnames=0
-    - op: replace
-      path: /machine/network/extraHostEntries
-      value:
-        - ip: 172.174.35.21
-          aliases:
-            - discovery.talos.dev
-        - ip: 162.159.200.1
-          aliases:
-            - time.cloudflare.com
   environmentRef:
     namespace: default
     name: homelab  
@@ -47,15 +38,6 @@ spec:
       value:
         - cpufreq.default_governor=performance
         - net.ifnames=0
-    - op: replace
-      path: /machine/network/extraHostEntries
-      value:
-        - ip: 172.174.35.21
-          aliases:
-            - discovery.talos.dev
-        - ip: 162.159.200.1
-          aliases:
-            - time.cloudflare.com
   environmentRef:
     namespace: default
     name: homelab  
