@@ -26,7 +26,7 @@ spec:
                   dhcp: true
                   vip:
                     ip: 10.0.0.10
-      generateType: controlplane
+      generateType: init
       talosVersion: v1.12.2
     init:
       strategicPatches:
@@ -58,4 +58,8 @@ spec:
     name: homelab-cp
     namespace: default
   replicas: 3
+  rolloutStrategy:
+    rollingUpdate:
+      maxSurge: 0
+    type: RollingUpdate
   version: v1.35.0
