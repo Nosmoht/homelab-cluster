@@ -9,8 +9,14 @@ spec:
   options:
     - key: server
       values: [192.168.2.1]
+    - key: domain
+      values: [homelab.ntbc.io]
+    - key: local
+      values: ['/homelab.ntbc.io/']
     - key: dhcp-range
       values: [10.0.0.0, static, infinite]
+    - key: dhcp-range
+      values: [10.0.0.240, 10.0.0.249, 12h]
     - key: dhcp-match
       values: ['set:ipxeclient', '175', '39']
     - key: dhcp-boot

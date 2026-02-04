@@ -25,11 +25,17 @@ spec:
             - --dns
             - --
             - --bind-interfaces
+            - --interface=eth1
+            - --except-interface=eth0
             - --bogus-priv
+            - --domain-needed
+            - --stop-dns-rebind
+            - --dhcp-authoritative
+            - --cache-size=5000
+            - --local-ttl=60
+            - --neg-ttl=60
             - --listen-address=10.0.0.1
             - --expand-hosts
-            - --log-dhcp
-            - --log-queries
           env:
             - name: NODE_NAME
               valueFrom:
