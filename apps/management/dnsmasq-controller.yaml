@@ -3,6 +3,10 @@ kind: Application
 metadata:
   name: dnsmasq-controller
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   destination:
     namespace: dnsmasq-controller
@@ -13,4 +17,15 @@ spec:
     repoURL: git@github.com:Nosmoht/homelab-cluster.git
     targetRevision: HEAD
   syncPolicy:
-    automated: {}
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - ApplyOutOfSyncOnly=true
+      - CreateNamespace=true

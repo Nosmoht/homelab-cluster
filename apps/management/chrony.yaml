@@ -3,6 +3,10 @@ kind: Application
 metadata:
   name: chrony
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   destination:
     namespace: chrony
@@ -14,6 +18,14 @@ spec:
     targetRevision: HEAD
   syncPolicy:
     automated:
+      prune: true
       selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
     syncOptions:
+      - ApplyOutOfSyncOnly=true
       - CreateNamespace=true
