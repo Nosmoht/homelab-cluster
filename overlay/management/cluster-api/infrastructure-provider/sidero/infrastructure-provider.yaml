@@ -2,6 +2,8 @@ apiVersion: operator.cluster.x-k8s.io/v1alpha2
 kind: InfrastructureProvider
 metadata:
   name: sidero
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   version: v0.6.7
   configSecret:

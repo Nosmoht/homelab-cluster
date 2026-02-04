@@ -16,6 +16,13 @@ Current reconciliation setup:
     `chrony`, `dnsmasq-controller`)
   - wave `1`: dependent apps (`cluster-api`, `metallb`)
 
+Inside the `cluster-api` app, provider installation is also wave-ordered:
+
+- wave `0`: `CoreProvider` (`cluster-api`)
+- wave `1`: Talos provider prerequisites (`Secret/sidero`) and Talos providers
+  (`BootstrapProvider`, `ControlPlaneProvider`)
+- wave `2`: `InfrastructureProvider/sidero`
+
 ## Manual reconciliation operations
 
 List management apps and their sync/health state:
