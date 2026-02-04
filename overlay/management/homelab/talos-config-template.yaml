@@ -1,30 +1,27 @@
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
 kind: TalosConfigTemplate
 metadata:
-  name: homelab-workers
+  name: homelab-workers-v1-12-2
 spec:
   template:
     spec:
-      configPatches:
-        - op: replace
-          path: /machine/install/image
-          value: factory.talos.dev/installer/797d93756de3d25be5830c940abc717e72ca4c7130c70ab292b7a337888f322a:v1.12.2
-        - op: add
-          path: /machine/kubelet/extraArgs
-          value:
-            rotate-server-certificates: true
-        - op: add
-          path: /machine/network/disableSearchDomain
-          value: true
-        - op: replace
-          path: /machine/network/interfaces
-          value:
-            - interface: br0
-              dhcp: true
-              bridge:
-                stp:
-                  enabled: true
-                interfaces:
-                  - eth0
+      strategicPatches:
+        - |
+          machine:
+            install:
+              image: factory.talos.dev/installer/797d93756de3d25be5830c940abc717e72ca4c7130c70ab292b7a337888f322a:v1.12.2
+            kubelet:
+              extraArgs:
+                rotate-server-certificates: true
+            network:
+              disableSearchDomain: true
+              interfaces:
+                - interface: br0
+                  dhcp: true
+                  bridge:
+                    stp:
+                      enabled: true
+                    interfaces:
+                      - eth0
       generateType: join
       talosVersion: v1.12.2
