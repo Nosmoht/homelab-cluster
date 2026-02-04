@@ -21,13 +21,9 @@ spec:
             network:
               disableSearchDomain: true
               interfaces:
-                - interface: br0
+                - deviceSelector:
+                    physical: true
                   dhcp: true
-                  bridge:
-                    stp:
-                      enabled: true
-                    interfaces:
-                      - eth0
                   vip:
                     ip: 10.0.0.10
       generateType: controlplane
@@ -49,13 +45,9 @@ spec:
             network:
               disableSearchDomain: true
               interfaces:
-                - interface: br0
+                - deviceSelector:
+                    physical: true
                   dhcp: true
-                  bridge:
-                    stp:
-                      enabled: true
-                    interfaces:
-                      - eth0
                   vip:
                     ip: 10.0.0.10
       generateType: controlplane
