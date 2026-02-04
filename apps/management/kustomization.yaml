@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - project.yaml
   - argocd.yaml
+  - cert-manager-management.yaml
   - cluster-api-operator.yaml
   - cluster-api.yaml
   - chrony.yaml

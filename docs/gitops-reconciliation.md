@@ -23,8 +23,9 @@ Current reconciliation setup:
 - Sync waves enforce dependency ordering:
   - wave `-2`: `AppProject/management`
   - wave `-1`: `argocd` (self-management app)
-  - wave `0`: operators and infra (`cluster-api-operator`, `metallb-operator`,
-    `chrony`, `dnsmasq-controller`)
+  - wave `0`: operators and infra (`cert-manager-management`,
+    `cluster-api-operator`, `metallb-operator`, `chrony`,
+    `dnsmasq-controller`)
   - wave `1`: dependent apps (`cluster-api`, `metallb`)
 
 Inside the `cluster-api` app, provider installation is also wave-ordered:

@@ -44,6 +44,7 @@ kubectl --context admin@sidero apply -f apps/management-root.yaml
 After that, Argo manages everything listed in `apps/management/`.
 Current core management apps in app-of-apps:
 - `argocd` (self-managed from `overlay/management/argocd`)
+- `cert-manager-management` (from `overlay/management/cert-manager`)
 - `chrony`
 - `dnsmasq-controller`
 - `cluster-api-operator`
@@ -121,7 +122,7 @@ Key variables live in `install/.env`:
 - `base/`: reusable Kustomize bases
 - `overlay/management/`: management cluster overlays and Argo CD apps
 - `docs/`: operational notes (for example `docs/dnsmasq-controller.md`,
-  `docs/chrony.md`)
+  `docs/chrony.md`, `docs/cert-manager.md`)
 
 ## Contributing
 
