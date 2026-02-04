@@ -6,7 +6,8 @@ configuration for the gateway node.
 Current behavior:
 
 - dnsmasq listens on `10.0.0.1` in host network mode.
-- dnsmasq only serves on private-cloud interface `eth1` and excludes `eth0`.
+- dnsmasq only serves on private-cloud interface `eth1` and excludes `eth0`
+  and loopback `lo`.
 - Upstream DNS forwarding uses Fritzbox (`192.168.2.1`).
 - Local zone is authoritative for `homelab.ntbc.io` (`domain` + `local`).
 - DNS safety/perf options are enabled (`domain-needed`, `stop-dns-rebind`,
