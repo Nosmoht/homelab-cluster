@@ -33,6 +33,10 @@ spec:
       hostnames:
         - node-05
         - node-05.homelab.ntbc.io
+    - ip: 10.0.0.16
+      hostnames:
+        - node-06
+        - node-06.homelab.ntbc.io
     - ip: 10.0.0.254
       hostnames:
         - switch

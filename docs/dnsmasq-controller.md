@@ -15,5 +15,6 @@ Current behavior:
 - DHCP runs in authoritative mode and provides:
   - static leases (`dhcp-range=10.0.0.0,static,infinite`)
   - small temporary dynamic pool (`10.0.0.240-10.0.0.249`, `12h`)
+- Static DHCP/DNS host entries are present for `node-01` to `node-06`.
 - The dnsmasq DaemonSet is pinned to the gateway node via
   `kubernetes.io/hostname=sidero`.
