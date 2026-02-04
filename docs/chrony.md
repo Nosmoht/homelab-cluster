@@ -13,4 +13,5 @@ Current behavior:
   parallel rollout on a single-node gateway.
 - Liveness checks verify `chronyd` is running.
 - Readiness checks verify `chronyc tracking` responds.
-- Argo CD application manifest is tracked in `apps/management/chrony.yaml`.
+- Argo CD application manifest is tracked in `apps/management/chrony.yaml`
+  and deployed by parent app `apps/management-root.yaml`.

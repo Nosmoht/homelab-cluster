@@ -35,6 +35,14 @@ Day2 (GitOps):
 - Argo CD manages everything in `overlay/management/` after bootstrap.
 - Changes flow via PRs + CI.
 
+Bootstrap for management Argo apps (one-time):
+
+```bash
+kubectl --context admin@sidero apply -f apps/management-root.yaml
+```
+
+After that, Argo manages everything listed in `apps/management/`.
+
 ## Versions
 
 Versions are pinned in `install/versions.mk` and used by the `install/Makefile`.
