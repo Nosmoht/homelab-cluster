@@ -53,8 +53,8 @@ spec:
       priorityClassName: system-node-critical
       serviceAccountName: dnsmasq-controller
       terminationGracePeriodSeconds: 10
-      # nodeSelector:
-      #   node-role.kubernetes.io/dnsmasq: ""
+      nodeSelector:
+        kubernetes.io/hostname: sidero
       tolerations:
         - effect: NoSchedule
           operator: Exists
