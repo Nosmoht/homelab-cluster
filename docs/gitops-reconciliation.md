@@ -13,6 +13,9 @@ Current reconciliation setup:
 - `cluster-api` app uses `SkipDryRunOnMissingResource=true` because
   `CoreProvider/BootstrapProvider/ControlPlaneProvider/InfrastructureProvider`
   CRDs are introduced by the `cluster-api-operator` app.
+- `cluster-api-operator` is pinned to `v0.15.1` until Talos/Sidero providers
+  have stable `v1beta2` contract support. With operator `v0.25.0`, provider
+  upgrades fail with `ComponentsUpgradeError` (`requested v1beta1`).
 - Sync waves enforce dependency ordering:
   - wave `-2`: `AppProject/management`
   - wave `0`: operators and infra (`cluster-api-operator`, `metallb-operator`,
