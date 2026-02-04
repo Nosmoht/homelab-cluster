@@ -45,6 +45,7 @@ After that, Argo manages everything listed in `apps/management/`.
 Current core management apps in app-of-apps:
 - `argocd` (self-managed from `overlay/management/argocd`)
 - `cert-manager` (from `overlay/management/cert-manager`)
+- `homelab` (Cluster API + Sidero cluster resources from `overlay/management/homelab`)
 - `chrony`
 - `dnsmasq-controller`
 - `cluster-api-operator`

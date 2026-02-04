@@ -8,6 +8,7 @@ resources:
   - workload-applicationset.yaml
   - cluster-api-operator.yaml
   - cluster-api.yaml
+  - homelab.yaml
   - chrony.yaml
   - dnsmasq-controller.yaml
   - metallb-operator.yaml
