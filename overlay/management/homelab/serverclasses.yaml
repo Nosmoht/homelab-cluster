@@ -8,12 +8,9 @@ spec:
       machine:
         install:
           disk: /dev/sda
-          extraKernelArgs:
-            - cpufreq.default_governor=performance
-            - net.ifnames=0
   environmentRef:
     namespace: default
-    name: homelab  
+    name: homelab
   qualifiers:
     hardware:
       - compute:
@@ -33,12 +30,9 @@ spec:
       machine:
         install:
           disk: /dev/sda
-          extraKernelArgs:
-            - cpufreq.default_governor=performance
-            - net.ifnames=0
   environmentRef:
     namespace: default
-    name: homelab  
+    name: homelab
   qualifiers:
     hardware:
       - compute:
