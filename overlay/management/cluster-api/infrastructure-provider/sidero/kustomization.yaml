@@ -6,6 +6,8 @@ resources:
   - infrastructure-provider.yaml
 generatorOptions:
   disableNameSuffixHash: true
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 secretGenerator:
   - name: sidero
     literals:

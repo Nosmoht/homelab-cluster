@@ -3,5 +3,7 @@ kind: CoreProvider
 metadata:
   name: cluster-api
   namespace: capi-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   version: v1.9.3
