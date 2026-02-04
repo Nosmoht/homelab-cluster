@@ -8,7 +8,8 @@ Current behavior:
 - dnsmasq listens on `10.0.0.1` in host network mode.
 - dnsmasq only serves on private-cloud interface `eth1` and excludes `eth0`
   and loopback `lo`.
-- Upstream DNS forwarding uses Fritzbox (`192.168.2.1`).
+- Upstream DNS forwarding uses Fritzbox (`192.168.2.1`) and ignores
+  `/etc/resolv.conf` (`--no-resolv`).
 - Local zone is authoritative for `homelab.ntbc.io` (`domain` + `local`).
 - DNS safety/perf options are enabled (`domain-needed`, `stop-dns-rebind`,
   `cache-size=5000`, `local-ttl=60`, `neg-ttl=60`).
