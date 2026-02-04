@@ -29,6 +29,7 @@ spec:
             - --except-interface=eth0
             - --except-interface=lo
             - --bogus-priv
+            - --no-resolv
             - --domain-needed
             - --stop-dns-rebind
             - --dhcp-authoritative
