@@ -11,10 +11,11 @@ spec:
     - clusters:
         selector:
           matchLabels:
+            argocd.argoproj.io/secret-type: cluster
             homelab.ntbc.io/apps-enabled: "true"
   template:
     metadata:
-      name: workloads-{{.name}}
+      name: workloads-{{.nameNormalized}}
       namespace: argocd
       labels:
         homelab.ntbc.io/generated-by: workload-clusters
@@ -25,7 +26,7 @@ spec:
         targetRevision: HEAD
         path: apps
       destination:
-        name: in-cluster
+        server: '{{.server}}'
         namespace: argocd
       syncPolicy:
         automated:
