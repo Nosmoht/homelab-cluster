@@ -10,6 +10,9 @@ Current reconciliation setup:
 - `apps/management/project.yaml` creates the `management` AppProject in Git.
 - Child apps run with automated sync (`prune: true`, `selfHeal: true`).
 - Retry policy is enabled on child apps to handle transient failures.
+- `cluster-api` app uses `SkipDryRunOnMissingResource=true` because
+  `CoreProvider/BootstrapProvider/ControlPlaneProvider/InfrastructureProvider`
+  CRDs are introduced by the `cluster-api-operator` app.
 - Sync waves enforce dependency ordering:
   - wave `-2`: `AppProject/management`
   - wave `0`: operators and infra (`cluster-api-operator`, `metallb-operator`,

@@ -27,4 +27,5 @@ spec:
         maxDuration: 3m
     syncOptions:
       - ApplyOutOfSyncOnly=true
+      - SkipDryRunOnMissingResource=true
       - ServerSideApply=true
