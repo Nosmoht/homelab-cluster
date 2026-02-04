@@ -42,6 +42,13 @@ kubectl --context admin@sidero apply -f apps/management-root.yaml
 ```
 
 After that, Argo manages everything listed in `apps/management/`.
+Current core management apps in app-of-apps:
+- `chrony`
+- `dnsmasq-controller`
+- `cluster-api-operator`
+- `cluster-api`
+- `metallb-operator`
+- `metallb`
 
 ## Versions
 
@@ -81,6 +88,9 @@ make -C install apply
 # Upgrades
 make -C install upgrade
 make -C install upgrade-k8s
+
+# Backup etcd snapshot
+make -C install backup TALOS_NODE_ENDPOINT=sidero.homelab.ntbc.io
 ```
 
 Key variables live in `install/.env`:
@@ -97,6 +107,11 @@ Key variables live in `install/.env`:
 - PRs and pushes to `main` run `make config-dry-run`.
 - The dry-run output is posted as a PR comment (redacted).
 - See `docs/ci.md` for details.
+
+## Backup runbook
+
+- Backup/restore: `docs/backup-restore.md`
+- Latest drill record: `docs/drills/2026-02-04-backup-restore-drill.md`
 
 ## Repo layout
 

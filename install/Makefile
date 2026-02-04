@@ -35,6 +35,8 @@ CLUSTER_ENDPOINT ?= https://$(CLUSTER_NODE_IP):6443
 CLUSTER_SECRETS_FILE ?= secrets.yaml
 CLUSTER_INSTALL_IMAGE ?= $(CLUSTER_INSTALL_IMAGE_BASE):$(CLUSTER_TALOS_VERSION)
 TALOS_NODE_ENDPOINT ?= $(CLUSTER_NODE_IP)
+BACKUP_OUTPUT_DIR ?= $(MAKEFILE_DIR)backups
+BACKUP_RETENTION_DAYS ?= 30
 
 GEN_CONFIG_COMMON_FLAGS = \
 	--additional-sans $(CLUSTER_ADDITIONAL_SANS) \
@@ -50,12 +52,12 @@ GEN_CONFIG_COMMON_FLAGS = \
 	--with-kubespan=$(CLUSTER_CONFIG_WITH_KUBESPAN) \
 	--with-secrets $(CLUSTER_SECRETS_FILE)
 
-.PHONY: help prepare-output-dir check-tools check-env \
-	config config-dry-run validate install apply upgrade upgrade-k8s secrets clean \
+.PHONY: help prepare-output-dir check-tools check-env check-talosconfig \
+	config config-dry-run validate install apply upgrade upgrade-k8s secrets clean backup backup-prune \
 	talosctl-gen-secrets talosctl-gen-config-controlplane talosctl-gen-config-worker \
 	talosctl-gen-config-talosconfig talosctl-gen-config \
 	validate-configs talosctl-apply-config-dry-run talosctl-apply-config talosctl-apply-config-and-bootstrap \
-	talosctl-upgrade talosctl-upgrade-k8s clean-configs
+	talosctl-upgrade talosctl-upgrade-k8s talosctl-etcd-backup clean-configs
 
 help:
 	@printf '%s\n' \
@@ -70,6 +72,8 @@ help:
 		'  upgrade         Upgrade Talos' \
 		'  upgrade-k8s     Upgrade Kubernetes' \
 		'  secrets         Generate install/secrets.yaml' \
+		'  backup          Create etcd snapshot + sha256 checksum' \
+		'  backup-prune    Remove local snapshots older than BACKUP_RETENTION_DAYS' \
 		'  clean           Remove generated configs (not secrets)' \
 		'' \
 		'Low-level targets:' \
@@ -80,6 +84,7 @@ help:
 		'  talosctl-apply-config-and-bootstrap  Apply config and bootstrap' \
 		'  talosctl-upgrade                     Upgrade Talos' \
 		'  talosctl-upgrade-k8s                 Upgrade Kubernetes' \
+		'  talosctl-etcd-backup                 Create etcd snapshot + checksum' \
 		'  clean-configs                        Remove generated configs (not secrets)' \
 		'' \
 		'Common variables (set via ENV_FILE):' \
@@ -90,6 +95,7 @@ help:
 		'  CLUSTER_CONFIG_OUTPUT_DIR, CLUSTER_ADDITIONAL_SANS, CLUSTER_ENDPOINT' \
 		'  CLUSTER_VALIDATE_MODE (metal|cloud|container)' \
 		'  TALOS_NODE_ENDPOINT (Talos API node target)' \
+		'  BACKUP_OUTPUT_DIR, BACKUP_RETENTION_DAYS' \
 		'' \
 		'Env file:' \
 		'  ENV_FILE (default: install/.env)'
@@ -106,6 +112,9 @@ check-env:
 	@$(foreach var,CLUSTER_NAME CLUSTER_NODE_IP CLUSTER_INSTALL_DISK CLUSTER_INSTALL_IMAGE_BASE,\
 		$(if $($(var)),,$(error Missing required variable: $(var)))\
 	)
+
+check-talosconfig:
+	@test -f $(CLUSTER_CONFIG_OUTPUT_TALOSCONFIG) || { echo "Missing $(CLUSTER_CONFIG_OUTPUT_TALOSCONFIG). Generate it first with 'make config'."; exit 1; }
 
 talosctl-gen-secrets: check-tools
 	@test -f $(MAKEFILE_DIR).gitignore && grep -q '^secrets\.yaml$$' $(MAKEFILE_DIR).gitignore || { echo "install/.gitignore must include secrets.yaml"; exit 1; }
@@ -178,6 +187,22 @@ talosctl-upgrade-k8s: check-tools
 		--with-docs=$(CLUSTER_CONFIG_WITH_DOCS) \
 		--with-examples=$(CLUSTER_CONFIG_WITH_EXAMPLES)
 
+talosctl-etcd-backup: check-tools check-env check-talosconfig
+	@set -euo pipefail; \
+	mkdir -p $(BACKUP_OUTPUT_DIR); \
+	ts=$$(date -u +%Y%m%dT%H%M%SZ); \
+	backup_file="$(BACKUP_OUTPUT_DIR)/$(CLUSTER_NAME)-etcd-$${ts}.db"; \
+	talosctl \
+		--talosconfig $(CLUSTER_CONFIG_OUTPUT_TALOSCONFIG) \
+		--nodes $(TALOS_NODE_ENDPOINT) \
+		etcd snapshot "$$backup_file"; \
+	if command -v sha256sum >/dev/null 2>&1; then \
+		sha256sum "$$backup_file" > "$$backup_file.sha256"; \
+	else \
+		shasum -a 256 "$$backup_file" > "$$backup_file.sha256"; \
+	fi; \
+	echo "Created $$backup_file and $$backup_file.sha256"
+
 clean-configs:
 	rm -f $(CLUSTER_CONFIG_OUTPUT_CONTROLPLANE) $(CLUSTER_CONFIG_OUTPUT_WORKER) $(CLUSTER_CONFIG_OUTPUT_TALOSCONFIG)
 
@@ -196,3 +221,10 @@ upgrade-k8s: talosctl-upgrade-k8s
 secrets: talosctl-gen-secrets
 
 clean: clean-configs
+
+backup: talosctl-etcd-backup
+
+backup-prune:
+	@set -euo pipefail; \
+	mkdir -p $(BACKUP_OUTPUT_DIR); \
+	find $(BACKUP_OUTPUT_DIR) -type f \( -name '*.db' -o -name '*.sha256' \) -mtime +$(BACKUP_RETENTION_DAYS) -print -delete

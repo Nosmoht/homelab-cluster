@@ -3,3 +3,4 @@ secrets.yaml
 talosconfig
 worker.yaml
 .env
+backups/
