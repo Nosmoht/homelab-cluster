@@ -43,6 +43,7 @@ kubectl --context admin@sidero apply -f apps/management-root.yaml
 
 After that, Argo manages everything listed in `apps/management/`.
 Current core management apps in app-of-apps:
+- `argocd` (self-managed from `overlay/management/argocd`)
 - `chrony`
 - `dnsmasq-controller`
 - `cluster-api-operator`
@@ -54,6 +55,7 @@ Current core management apps in app-of-apps:
 
 Versions are pinned in `install/versions.mk` and used by the `install/Makefile`.
 If a version is not derived from the repo, add a TODO and centralize it.
+Argo CD base manifests are versioned in `base/argocd/`.
 
 ## Secrets
 
