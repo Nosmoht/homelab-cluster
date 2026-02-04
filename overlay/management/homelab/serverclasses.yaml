@@ -13,15 +13,6 @@ spec:
         - cpufreq.default_governor=performance
         - net.ifnames=0
     - op: replace
-      path: /machine/network/nameservers
-      value:
-        - 10.0.0.1
-    - op: replace
-      path: /machine/time
-      value:
-        servers:
-          - 10.0.0.1
-    - op: replace
       path: /machine/network/extraHostEntries
       value:
         - ip: 172.174.35.21
@@ -56,15 +47,6 @@ spec:
       value:
         - cpufreq.default_governor=performance
         - net.ifnames=0
-    - op: replace
-      path: /machine/network/nameservers
-      value:
-        - 10.0.0.1
-    - op: replace
-      path: /machine/time
-      value:
-        servers:
-          - 10.0.0.1
     - op: replace
       path: /machine/network/extraHostEntries
       value:
