@@ -15,3 +15,6 @@ patches:
     target:
       kind: Deployment
       name: argo-server
+
+generators:
+  - argo-workflows-sso-oidc-generator.yaml

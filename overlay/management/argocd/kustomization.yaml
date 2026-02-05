@@ -22,3 +22,6 @@ patches:
     target:
       kind: Deployment
       name: argocd-repo-server
+
+generators:
+  - argocd-secret-sso-generator.yaml
