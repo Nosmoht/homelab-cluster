@@ -6,3 +6,6 @@ talosconfig*
 
 # Local helper file used during initial homelab manifest generation
 overlay/management/homelab/Makefile
+
+# Local SOPS age private key material
+install/sops-age.key

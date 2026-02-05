@@ -136,7 +136,7 @@ Key variables live in `install/.env`:
 - `overlay/management/`: management cluster overlays and Argo CD apps
 - `docs/`: operational notes (for example `docs/dnsmasq-controller.md`,
   `docs/chrony.md`, `docs/cert-manager.md`, `docs/workload-fleet.md`,
-  `docs/capi-argocd-bridge.md`, `docs/sso.md`)
+  `docs/capi-argocd-bridge.md`, `docs/sso.md`, `docs/sops.md`)
 
 ## Contributing
 

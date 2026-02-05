@@ -10,6 +10,11 @@ Dex endpoint:
 
 - `https://$DEX_HOST`
 
+## Mode selection
+
+- **Recommended (GitOps + encrypted secrets):** use SOPS flow in `docs/sops.md`
+- **Manual fallback:** continue with this document's secret bootstrap commands
+
 ## 1) Set endpoint variables
 
 Use environment variables to define all DNS names consistently:

@@ -53,7 +53,7 @@ GEN_CONFIG_COMMON_FLAGS = \
 	--with-secrets $(CLUSTER_SECRETS_FILE)
 
 .PHONY: help prepare-output-dir check-tools check-env check-talosconfig \
-	config config-dry-run validate install apply upgrade upgrade-k8s secrets clean backup backup-prune \
+	config config-dry-run validate install apply upgrade upgrade-k8s secrets clean backup backup-prune bootstrap-sops \
 	talosctl-gen-secrets talosctl-gen-config-controlplane talosctl-gen-config-worker \
 	talosctl-gen-config-talosconfig talosctl-gen-config \
 	validate-configs talosctl-apply-config-dry-run talosctl-apply-config talosctl-apply-config-and-bootstrap \
@@ -74,6 +74,7 @@ help:
 		'  secrets         Generate install/secrets.yaml' \
 		'  backup          Create etcd snapshot + sha256 checksum' \
 		'  backup-prune    Remove local snapshots older than BACKUP_RETENTION_DAYS' \
+		'  bootstrap-sops  Generate age key + create/update argocd sops-age secret' \
 		'  clean           Remove generated configs (not secrets)' \
 		'' \
 		'Low-level targets:' \
@@ -228,3 +229,6 @@ backup-prune:
 	@set -euo pipefail; \
 	mkdir -p $(BACKUP_OUTPUT_DIR); \
 	find $(BACKUP_OUTPUT_DIR) -type f \( -name '*.db' -o -name '*.sha256' \) -mtime +$(BACKUP_RETENTION_DAYS) -print -delete
+
+bootstrap-sops:
+	@K8S_CONTEXT=$${K8S_CONTEXT:-admin@sidero} $(MAKEFILE_DIR)../scripts/bootstrap-sops.sh
