@@ -18,14 +18,21 @@ The workflow template is named `kube-bench-run` in the `argo` namespace.
 
 Default parameters:
 
+- `clusterNamespace`: `default`
+- `clusterName`: `homelab`
 - `kubeconfigSecretNamespace`: `default`
-- `kubeconfigSecretName`: `homelab-kubeconfig`
+- `kubeconfigSecretName`: `auto`
 - `kubeconfigSecretKey`: `value`
 - `kubeBenchNamespace`: `kube-system`
 - `kubeBenchDaemonsetName`: `kube-bench`
 - `kubeBenchImage`: `aquasec/kube-bench:v0.14.1`
 - `kubeBenchBenchmark`: `cis-1.11`
 - `waitSeconds`: `90`
+
+When `kubeconfigSecretName=auto`, the workflow looks up a secret named
+`*-kubeconfig` in `clusterNamespace` using the label
+`cluster.x-k8s.io/cluster-name=<clusterName>`. To override the lookup, set
+`kubeconfigSecretName` (and optionally `kubeconfigSecretNamespace`) directly.
 
 ## Results
 

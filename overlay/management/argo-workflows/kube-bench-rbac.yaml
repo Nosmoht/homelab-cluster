@@ -29,23 +29,21 @@ subjects:
     namespace: argo
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: ClusterRole
 metadata:
   name: kube-bench-kubeconfig-reader
-  namespace: default
 rules:
   - apiGroups: [""]
     resources: ["secrets"]
-    verbs: ["get"]
+    verbs: ["get", "list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
+kind: ClusterRoleBinding
 metadata:
   name: kube-bench-kubeconfig-reader
-  namespace: default
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: Role
+  kind: ClusterRole
   name: kube-bench-kubeconfig-reader
 subjects:
   - kind: ServiceAccount
