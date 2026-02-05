@@ -20,7 +20,7 @@ This bridge registers workload clusters in Argo CD automatically.
 ## Verification
 
 ```bash
-kubectl --context admin@sidero -n argo-events get eventsource,sensor
+kubectl --context admin@sidero -n argo-events get eventbus,eventsource,sensor
 kubectl --context admin@sidero -n argo-events get workflows
 kubectl --context admin@sidero -n argocd get secret -l argocd.argoproj.io/secret-type=cluster
 ```
