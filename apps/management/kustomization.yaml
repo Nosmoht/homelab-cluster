@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - project.yaml
   - workload-fleet-project.yaml
+  - dex.yaml
   - argocd.yaml
   - argo-workflows.yaml
   - argo-events.yaml

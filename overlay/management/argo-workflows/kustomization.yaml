@@ -5,3 +5,13 @@ resources:
   - ../../../base/argo-workflows/v4.0.0
   - ingress.yaml
   - certificate.yaml
+  - sso-rbac.yaml
+patches:
+  - path: workflow-controller-configmap-sso-patch.yaml
+    target:
+      kind: ConfigMap
+      name: workflow-controller-configmap
+  - path: argo-server-sso-auth-mode-patch.yaml
+    target:
+      kind: Deployment
+      name: argo-server

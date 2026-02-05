@@ -44,6 +44,7 @@ kubectl --context admin@sidero apply -f apps/management-root.yaml
 After that, Argo manages everything listed in `apps/management/`.
 Current core management apps in app-of-apps:
 - `argocd` (self-managed from `overlay/management/argocd`)
+- `dex` (standalone OIDC provider for Argo services)
 - `argo-workflows`
 - `argo-events`
 - `capi-argocd-bridge` (sync CAPI kubeconfig secrets to Argo CD cluster secrets)
@@ -60,6 +61,7 @@ Current core management apps in app-of-apps:
 Management UIs:
 - Argo CD: `https://argocd.homelab.ntbc.io`
 - Argo Workflows: `https://argoworkflows.homelab.ntbc.io`
+- Dex: `https://dex.homelab.ntbc.io`
 
 ## Versions
 
@@ -134,7 +136,7 @@ Key variables live in `install/.env`:
 - `overlay/management/`: management cluster overlays and Argo CD apps
 - `docs/`: operational notes (for example `docs/dnsmasq-controller.md`,
   `docs/chrony.md`, `docs/cert-manager.md`, `docs/workload-fleet.md`,
-  `docs/capi-argocd-bridge.md`)
+  `docs/capi-argocd-bridge.md`, `docs/sso.md`)
 
 ## Contributing
 
