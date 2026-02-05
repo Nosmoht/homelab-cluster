@@ -14,14 +14,13 @@ spec:
             optional: true
       initContainers:
         - name: install-ksops
-          image: alpine:3.21
+          image: quay.io/getsops/sops:v3.11.0-alpine
           command:
             - /bin/sh
             - -c
           args:
             - |
               set -euo pipefail
-              apk add --no-cache curl tar
               arch="$(uname -m)"
               case "${arch}" in
                 aarch64|arm64) ksops_arch="arm64" ;;
@@ -32,8 +31,18 @@ spec:
                   ;;
               esac
               url="https://github.com/viaduct-ai/kustomize-sops/releases/download/v4.4.0/ksops_4.4.0_Linux_${ksops_arch}.tar.gz"
-              curl -fsSL "${url}" | tar -xz -C /custom-tools ksops
-              chmod +x /custom-tools/ksops
+              wget -qO- "${url}" | tar -xz -C /custom-tools ksops
+              cp "$(command -v sops)" /custom-tools/sops
+              chmod +x /custom-tools/ksops /custom-tools/sops
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            runAsUser: 65532
+            seccompProfile:
+              type: RuntimeDefault
           volumeMounts:
             - name: custom-tools
               mountPath: /custom-tools
@@ -46,6 +55,9 @@ spec:
             - name: custom-tools
               mountPath: /usr/local/bin/ksops
               subPath: ksops
+            - name: custom-tools
+              mountPath: /usr/local/bin/sops
+              subPath: sops
             - name: sops-age
               mountPath: /sops-age
               readOnly: true
