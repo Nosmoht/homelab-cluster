@@ -10,7 +10,7 @@ metadata:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: argo-workflows-sso-admin-token
+  name: argo-workflows-sso-admin.service-account-token
   namespace: argo
   annotations:
     kubernetes.io/service-account.name: argo-workflows-sso-admin
@@ -42,7 +42,7 @@ metadata:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: argo-workflows-sso-readonly-token
+  name: argo-workflows-sso-readonly.service-account-token
   namespace: argo
   annotations:
     kubernetes.io/service-account.name: argo-workflows-sso-readonly
