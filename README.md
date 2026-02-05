@@ -129,6 +129,10 @@ Key variables live in `install/.env`:
 - Backup/restore: `docs/backup-restore.md`
 - Latest drill record: `docs/drills/2026-02-04-backup-restore-drill.md`
 
+## Security checks
+
+- kube-bench workflow: `docs/kube-bench.md`
+
 ## Repo layout
 
 - `install/`: bootstrap helpers (Makefile, patches, config generation)

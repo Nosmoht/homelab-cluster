@@ -6,6 +6,8 @@ resources:
   - ingress.yaml
   - certificate.yaml
   - sso-rbac.yaml
+  - kube-bench-rbac.yaml
+  - kube-bench-workflowtemplate.yaml
 patches:
   - path: workflow-controller-configmap-sso-patch.yaml
     target:
