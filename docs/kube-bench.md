@@ -52,8 +52,11 @@ kubectl --context admin@sidero -n argo get configmap \
 
 ## Notes
 
-- kube-bench relies on host file paths under `/etc` and `/var`. On Talos,
-  some checks may be skipped or reported as failures due to missing paths.
+- The workflow mounts only `/etc/kubernetes` and `/var/lib` from the host. This
+  avoids Talos read-only filesystem issues that occur when mounting `/etc`
+  directly (it prevents `/etc/hostname` from being mounted by the runtime).
+- kube-bench relies on host file paths; some checks may be skipped or reported
+  as failures on Talos due to missing paths.
 - The template uses the CAPI kubeconfig secret in the management cluster to
   reach workload clusters. Update the secret name when running against a
   different cluster.
