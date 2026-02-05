@@ -89,8 +89,6 @@ kind: Secret
 metadata:
   name: dex-oidc-secrets
   namespace: dex
-  annotations:
-    kustomize.config.k8s.io/behavior: replace
 type: Opaque
 stringData:
   google-client-id: \"${GOOGLE_CLIENT_ID}\"
@@ -101,10 +99,8 @@ stringData:
 encrypt_manifest "apiVersion: v1
 kind: Secret
 metadata:
-  name: argocd-secret
+  name: argocd-sso-secret
   namespace: argocd
-  annotations:
-    kustomize.config.k8s.io/behavior: merge
 type: Opaque
 stringData:
   oidc.dex.clientSecret: \"${ARGOCD_OIDC_CLIENT_SECRET}\"" "${ARGOCD_SECRET_FILE}"
@@ -114,8 +110,6 @@ kind: Secret
 metadata:
   name: argo-workflows-sso-oidc
   namespace: argo
-  annotations:
-    kustomize.config.k8s.io/behavior: replace
 type: Opaque
 stringData:
   client-id: argo-workflows

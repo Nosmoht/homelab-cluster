@@ -127,7 +127,7 @@ export ARGOCD_OIDC_CLIENT_SECRET="$(python3 -c 'import secrets; print(secrets.to
 export ARGO_WORKFLOWS_OIDC_CLIENT_SECRET="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
 ```
 
-Recommended: run the helper script (does bootstrap + secret creation + patching).
+Recommended: run the helper script (does bootstrap + secret creation).
 
 ```bash
 ./scripts/bootstrap-sso.sh
@@ -155,12 +155,12 @@ kubectl --context "${K8S_CONTEXT}" -n dex create secret generic dex-oidc-secrets
   --dry-run=client -o yaml | kubectl --context "${K8S_CONTEXT}" apply -f -
 ```
 
-Patch Argo CD OIDC client secret (must match Dex static client secret):
+Create/update Argo CD OIDC client secret (must match Dex static client secret):
 
 ```bash
-kubectl --context "${K8S_CONTEXT}" -n argocd patch secret argocd-secret \
-  --type merge \
-  -p "{\"stringData\":{\"oidc.dex.clientSecret\":\"${ARGOCD_OIDC_CLIENT_SECRET}\"}}"
+kubectl --context "${K8S_CONTEXT}" -n argocd create secret generic argocd-sso-secret \
+  --from-literal=oidc.dex.clientSecret="${ARGOCD_OIDC_CLIENT_SECRET}" \
+  --dry-run=client -o yaml | kubectl --context "${K8S_CONTEXT}" apply -f -
 ```
 
 Create/update Argo Workflows OIDC client secret (must match Dex static client secret):

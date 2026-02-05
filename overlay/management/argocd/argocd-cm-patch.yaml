@@ -9,7 +9,7 @@ data:
     name: Dex
     issuer: https://dex.homelab.ntbc.io
     clientID: argocd
-    clientSecret: $oidc.dex.clientSecret
+    clientSecret: $argocd-sso-secret:oidc.dex.clientSecret
     requestedScopes:
       - openid
       - profile
