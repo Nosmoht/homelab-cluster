@@ -6,7 +6,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: dex.example.com
+    - host: dex.homelab.ntbc.io
       http:
         paths:
           - path: /
@@ -18,5 +18,5 @@ spec:
                   name: http
   tls:
     - hosts:
-        - dex.example.com
+        - dex.homelab.ntbc.io
       secretName: dex-tls

@@ -10,7 +10,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: argocd.example.com
+    - host: argocd.homelab.ntbc.io
       http:
         paths:
           - path: /
@@ -22,5 +22,5 @@ spec:
                   name: https
   tls:
     - hosts:
-        - argocd.example.com
+        - argocd.homelab.ntbc.io
       secretName: argocd-server-tls
