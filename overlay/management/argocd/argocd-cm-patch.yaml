@@ -3,6 +3,19 @@ kind: ConfigMap
 metadata:
   name: argocd-cm
 data:
+  url: https://argocd.homelab.ntbc.io
+  oidc.config: |
+    name: Dex
+    issuer: https://dex.homelab.ntbc.io
+    clientID: argocd
+    clientSecret: $oidc.dex.clientSecret
+    requestedScopes:
+      - openid
+      - profile
+      - email
+    requestedIDTokenClaims:
+      email:
+        essential: true
   resource.customizations.ignoreResourceUpdates.ConfigMap: |
     jqPathExpressions:
       # Ignore the cluster-autoscaler status

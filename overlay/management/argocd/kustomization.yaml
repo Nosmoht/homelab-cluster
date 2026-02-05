@@ -10,3 +10,11 @@ patches:
     target:
       kind: ConfigMap
       name: argocd-cm
+  - path: argocd-rbac-cm-sso-patch.yaml
+    target:
+      kind: ConfigMap
+      name: argocd-rbac-cm
+  - path: argocd-dex-server-disable-patch.yaml
+    target:
+      kind: Deployment
+      name: argocd-dex-server
