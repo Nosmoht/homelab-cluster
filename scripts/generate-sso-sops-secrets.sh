@@ -99,8 +99,10 @@ stringData:
 encrypt_manifest "apiVersion: v1
 kind: Secret
 metadata:
-  name: argocd-sso-secret
+  name: argocd-secret
   namespace: argocd
+  annotations:
+    kustomize.config.k8s.io/behavior: merge
 type: Opaque
 stringData:
   oidc.dex.clientSecret: \"${ARGOCD_OIDC_CLIENT_SECRET}\"" "${ARGOCD_SECRET_FILE}"

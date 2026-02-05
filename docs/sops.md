@@ -75,7 +75,7 @@ Then sync Argo CD.
 
 ```bash
 kubectl --context admin@sidero -n argocd get secret sops-age
-kubectl --context admin@sidero -n argocd get secret argocd-sso-secret
+kubectl --context admin@sidero -n argocd get secret argocd-secret
 kubectl --context admin@sidero -n dex get secret dex-oidc-secrets
 kubectl --context admin@sidero -n argo get secret argo-workflows-sso-oidc
 ```

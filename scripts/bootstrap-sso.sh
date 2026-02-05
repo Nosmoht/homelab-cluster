@@ -109,9 +109,9 @@ kubectl --context "${K8S_CONTEXT}" -n dex create secret generic dex-oidc-secrets
   --from-literal=argo-workflows-oidc-client-secret="${ARGO_WORKFLOWS_OIDC_CLIENT_SECRET}" \
   --dry-run=client -o yaml | kubectl --context "${K8S_CONTEXT}" apply -f -
 
-kubectl --context "${K8S_CONTEXT}" -n argocd create secret generic argocd-sso-secret \
-  --from-literal=oidc.dex.clientSecret="${ARGOCD_OIDC_CLIENT_SECRET}" \
-  --dry-run=client -o yaml | kubectl --context "${K8S_CONTEXT}" apply -f -
+kubectl --context "${K8S_CONTEXT}" -n argocd patch secret argocd-secret \
+  --type merge \
+  -p "{\"stringData\":{\"oidc.dex.clientSecret\":\"${ARGOCD_OIDC_CLIENT_SECRET}\"}}"
 
 kubectl --context "${K8S_CONTEXT}" -n argo create secret generic argo-workflows-sso-oidc \
   --from-literal=client-id="argo-workflows" \

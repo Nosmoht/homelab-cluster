@@ -155,12 +155,12 @@ kubectl --context "${K8S_CONTEXT}" -n dex create secret generic dex-oidc-secrets
   --dry-run=client -o yaml | kubectl --context "${K8S_CONTEXT}" apply -f -
 ```
 
-Create/update Argo CD OIDC client secret (must match Dex static client secret):
+Patch Argo CD OIDC client secret (must match Dex static client secret):
 
 ```bash
-kubectl --context "${K8S_CONTEXT}" -n argocd create secret generic argocd-sso-secret \
-  --from-literal=oidc.dex.clientSecret="${ARGOCD_OIDC_CLIENT_SECRET}" \
-  --dry-run=client -o yaml | kubectl --context "${K8S_CONTEXT}" apply -f -
+kubectl --context "${K8S_CONTEXT}" -n argocd patch secret argocd-secret \
+  --type merge \
+  -p "{\"stringData\":{\"oidc.dex.clientSecret\":\"${ARGOCD_OIDC_CLIENT_SECRET}\"}}"
 ```
 
 Create/update Argo Workflows OIDC client secret (must match Dex static client secret):
