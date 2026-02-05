@@ -2,14 +2,29 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
 GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID:-}"
 GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET:-}"
 ARGOCD_OIDC_CLIENT_SECRET="${ARGOCD_OIDC_CLIENT_SECRET:-}"
 ARGO_WORKFLOWS_OIDC_CLIENT_SECRET="${ARGO_WORKFLOWS_OIDC_CLIENT_SECRET:-}"
 
-DEX_SECRET_FILE="${DEX_SECRET_FILE:-overlay/management/dex/dex-oidc-secrets.sops.yaml}"
-ARGOCD_SECRET_FILE="${ARGOCD_SECRET_FILE:-overlay/management/argocd/argocd-secret-sso.sops.yaml}"
-WORKFLOWS_SECRET_FILE="${WORKFLOWS_SECRET_FILE:-overlay/management/argo-workflows/argo-workflows-sso-oidc.sops.yaml}"
+DEX_SECRET_FILE="${DEX_SECRET_FILE:-${REPO_ROOT}/overlay/management/dex/dex-oidc-secrets.sops.yaml}"
+ARGOCD_SECRET_FILE="${ARGOCD_SECRET_FILE:-${REPO_ROOT}/overlay/management/argocd/argocd-secret-sso.sops.yaml}"
+WORKFLOWS_SECRET_FILE="${WORKFLOWS_SECRET_FILE:-${REPO_ROOT}/overlay/management/argo-workflows/argo-workflows-sso-oidc.sops.yaml}"
+
+if [[ "${DEX_SECRET_FILE}" != /* ]]; then
+  DEX_SECRET_FILE="${REPO_ROOT}/${DEX_SECRET_FILE}"
+fi
+
+if [[ "${ARGOCD_SECRET_FILE}" != /* ]]; then
+  ARGOCD_SECRET_FILE="${REPO_ROOT}/${ARGOCD_SECRET_FILE}"
+fi
+
+if [[ "${WORKFLOWS_SECRET_FILE}" != /* ]]; then
+  WORKFLOWS_SECRET_FILE="${REPO_ROOT}/${WORKFLOWS_SECRET_FILE}"
+fi
 
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -39,9 +54,12 @@ encrypt_manifest() {
   local tmp_plain
 
   mkdir -p "$(dirname "${output}")"
-  tmp_plain="$(mktemp)"
+  tmp_plain="$(dirname "${output}")/.tmp.$(basename "${output}")"
   printf '%s\n' "${content}" > "${tmp_plain}"
-  sops --encrypt --input-type yaml --output-type yaml "${tmp_plain}" > "${output}"
+  if ! sops --encrypt --input-type yaml --output-type yaml "${tmp_plain}" > "${output}"; then
+    rm -f "${tmp_plain}"
+    return 1
+  fi
   rm -f "${tmp_plain}"
 }
 
