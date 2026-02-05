@@ -141,9 +141,9 @@ spec:
                         privileged: true
                       command: ["kube-bench"]
                       args:
+                        - "run"
                         - "--benchmark"
                         - "${BENCHMARK}"
-                        - "--stdout"
                       volumeMounts:
                         - name: host-etc-kubernetes
                           mountPath: /etc/kubernetes
