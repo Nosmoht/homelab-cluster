@@ -2,11 +2,22 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
 K8S_CONTEXT="${K8S_CONTEXT:-admin@sidero}"
 ARGOCD_NAMESPACE="${ARGOCD_NAMESPACE:-argocd}"
 SOPS_AGE_SECRET_NAME="${SOPS_AGE_SECRET_NAME:-sops-age}"
-SOPS_CONFIG_FILE="${SOPS_CONFIG_FILE:-.sops.yaml}"
-SOPS_AGE_KEY_FILE_LOCAL="${SOPS_AGE_KEY_FILE_LOCAL:-install/sops-age.key}"
+SOPS_CONFIG_FILE="${SOPS_CONFIG_FILE:-${REPO_ROOT}/.sops.yaml}"
+SOPS_AGE_KEY_FILE_LOCAL="${SOPS_AGE_KEY_FILE_LOCAL:-${REPO_ROOT}/install/sops-age.key}"
+
+if [[ "${SOPS_CONFIG_FILE}" != /* ]]; then
+  SOPS_CONFIG_FILE="${REPO_ROOT}/${SOPS_CONFIG_FILE}"
+fi
+
+if [[ "${SOPS_AGE_KEY_FILE_LOCAL}" != /* ]]; then
+  SOPS_AGE_KEY_FILE_LOCAL="${REPO_ROOT}/${SOPS_AGE_KEY_FILE_LOCAL}"
+fi
 
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
