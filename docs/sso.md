@@ -18,7 +18,28 @@ Required redirect URI:
 
 - `https://dex.homelab.ntbc.io/callback`
 
-## 2) Scratch setup (minimal manual steps)
+## 2) Configure the admin identity
+
+Before applying SSO manifests, set your own admin identity in both files:
+
+- `overlay/management/argocd/argocd-rbac-cm-sso-patch.yaml`
+- `overlay/management/argo-workflows/sso-rbac.yaml`
+
+Replace `sso-admin@example.com` with your own OIDC email claim, for example:
+
+```bash
+export SSO_ADMIN_EMAIL="you@example.com"
+```
+
+Then update both files (or edit them manually):
+
+```bash
+perl -pi -e "s/sso-admin\\@example\\.com/${SSO_ADMIN_EMAIL}/g" \
+  overlay/management/argocd/argocd-rbac-cm-sso-patch.yaml \
+  overlay/management/argo-workflows/sso-rbac.yaml
+```
+
+## 3) Scratch setup (minimal manual steps)
 
 For a fresh cluster, run this once before creating SSO secrets.
 `scripts/bootstrap-sso.sh` performs exactly these bootstrap steps automatically.
@@ -47,7 +68,7 @@ Why this is needed:
 - On a brand-new setup this namespace may not exist yet, so secret creation fails.
 - The commands above remove that race and keep manual bootstrap to one short step.
 
-## 3) Create required secrets (manual mode)
+## 4) Create required secrets (manual mode)
 
 Export all required variables first:
 
@@ -112,7 +133,7 @@ kubectl --context "${K8S_CONTEXT}" -n argo create secret generic argo-workflows-
   --dry-run=client -o yaml | kubectl --context "${K8S_CONTEXT}" apply -f -
 ```
 
-## 4) Validation
+## 5) Validation
 
 ```bash
 kubectl --context "${K8S_CONTEXT}" -n dex get deploy,pod,svc,ingress,certificate
@@ -128,7 +149,9 @@ Then test logins:
 ## Notes
 
 - Argo CD internal Dex deployment is intentionally scaled to `0`.
-- Argo Workflows SSO RBAC maps `thomas.krahn.tk@gmail.com` to admin and all
+- `sso-admin@example.com` is a placeholder and must be replaced with your own
+  identity before rollout.
+- Argo Workflows SSO RBAC maps your configured admin identity to admin and all
   other authenticated users to read-only.
 - Rotate OAuth client secrets immediately if they were ever shared in plaintext.
 - Current minimum manual input is only OAuth credentials and one-time secret creation.
