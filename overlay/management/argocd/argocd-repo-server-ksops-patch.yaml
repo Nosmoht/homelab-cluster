@@ -14,16 +14,26 @@ spec:
             optional: true
       initContainers:
         - name: install-ksops
-          image: viaductoss/ksops:v4.4.0
+          image: alpine:3.21
           command:
             - /bin/sh
             - -c
           args:
             - |
               set -euo pipefail
-              cp "$(command -v ksops)" /custom-tools/ksops
-              cp "$(command -v kustomize)" /custom-tools/kustomize
-              chmod +x /custom-tools/ksops /custom-tools/kustomize
+              apk add --no-cache curl tar
+              arch="$(uname -m)"
+              case "${arch}" in
+                aarch64|arm64) ksops_arch="arm64" ;;
+                x86_64|amd64) ksops_arch="x86_64" ;;
+                *)
+                  echo "unsupported architecture: ${arch}" >&2
+                  exit 1
+                  ;;
+              esac
+              url="https://github.com/viaduct-ai/kustomize-sops/releases/download/v4.4.0/ksops_4.4.0_Linux_${ksops_arch}.tar.gz"
+              curl -fsSL "${url}" | tar -xz -C /custom-tools ksops
+              chmod +x /custom-tools/ksops
           volumeMounts:
             - name: custom-tools
               mountPath: /custom-tools
@@ -36,9 +46,6 @@ spec:
             - name: custom-tools
               mountPath: /usr/local/bin/ksops
               subPath: ksops
-            - name: custom-tools
-              mountPath: /usr/local/bin/kustomize
-              subPath: kustomize
             - name: sops-age
               mountPath: /sops-age
               readOnly: true
