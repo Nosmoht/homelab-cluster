@@ -30,3 +30,4 @@ spec:
       - ApplyOutOfSyncOnly=true
       - CreateNamespace=true
       - ServerSideApply=true
+      - DisableClientSideApplyMigration=true
