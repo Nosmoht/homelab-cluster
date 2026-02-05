@@ -18,3 +18,7 @@ patches:
     target:
       kind: Deployment
       name: argocd-dex-server
+  - path: argocd-repo-server-ksops-patch.yaml
+    target:
+      kind: Deployment
+      name: argocd-repo-server
