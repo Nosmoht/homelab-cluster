@@ -14,6 +14,7 @@ spec:
         app: dnsmasq-controller
     spec:
       hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: dnsmasq
           image: docker.io/ntbc/dnsmasq-controller:v0.5.4
