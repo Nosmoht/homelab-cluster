@@ -67,7 +67,7 @@ spec:
                         - name: sourceNamespace
                         - name: sourceSecretName
                     container:
-                      image: bitnami/kubectl:1.35.0
+                      image: alpine/kubectl:1.35.0
                       command: ["/bin/sh", "-ceu"]
                       args:
                         - |
@@ -179,7 +179,7 @@ spec:
                         - name: sourceNamespace
                         - name: sourceSecretName
                     container:
-                      image: bitnami/kubectl:1.35.0
+                      image: alpine/kubectl:1.35.0
                       command: ["/bin/sh", "-ceu"]
                       args:
                         - |
