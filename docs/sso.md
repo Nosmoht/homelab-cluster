@@ -20,7 +20,9 @@ Required redirect URI:
 
 ## 2) Scratch setup (minimal manual steps)
 
-For a fresh cluster, run this once before creating SSO secrets:
+For a fresh cluster, run this once before creating SSO secrets.
+`scripts/bootstrap-sso.sh` performs exactly these bootstrap steps automatically.
+The script is idempotent and can be re-run.
 
 ```bash
 export K8S_CONTEXT="admin@sidero"
@@ -65,6 +67,22 @@ If `openssl` is not available, use Python instead:
 export ARGOCD_OIDC_CLIENT_SECRET="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
 export ARGO_WORKFLOWS_OIDC_CLIENT_SECRET="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
 ```
+
+Recommended: run the helper script (does bootstrap + secret creation + patching).
+
+```bash
+./scripts/bootstrap-sso.sh
+```
+
+The script uses these exported variables:
+
+- `K8S_CONTEXT` (default: `admin@sidero`)
+- `GOOGLE_CLIENT_ID` (required)
+- `GOOGLE_CLIENT_SECRET` (required)
+- `ARGOCD_OIDC_CLIENT_SECRET` (optional, auto-generated if unset)
+- `ARGO_WORKFLOWS_OIDC_CLIENT_SECRET` (optional, auto-generated if unset)
+
+Manual fallback (equivalent to the script):
 
 Create/update Dex connector + static client secrets:
 
