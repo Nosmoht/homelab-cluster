@@ -1,6 +1,7 @@
 # cert-manager on management cluster
 
-This cluster runs cert-manager for management-plane TLS (for example `argocd.homelab.ntbc.io`).
+This cluster runs cert-manager for management-plane TLS (for example
+`argocd.homelab.ntbc.io` and `argoworkflows.homelab.ntbc.io`).
 
 ## GitOps source
 

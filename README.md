@@ -57,6 +57,10 @@ Current core management apps in app-of-apps:
 - `metallb`
 - `workload-clusters` (ApplicationSet for non-management clusters)
 
+Management UIs:
+- Argo CD: `https://argocd.homelab.ntbc.io`
+- Argo Workflows: `https://argoworkflows.homelab.ntbc.io`
+
 ## Versions
 
 Versions are pinned in `install/versions.mk` and used by the `install/Makefile`.
