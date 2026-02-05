@@ -1,0 +1,192 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: kube-bench-run
+spec:
+  serviceAccountName: kube-bench-runner
+  entrypoint: run
+  onExit: cleanup
+  ttlStrategy:
+    secondsAfterSuccess: 86400
+    secondsAfterFailure: 86400
+  arguments:
+    parameters:
+      - name: kubeconfigSecretNamespace
+        value: default
+      - name: kubeconfigSecretName
+        value: homelab-kubeconfig
+      - name: kubeconfigSecretKey
+        value: value
+      - name: kubeBenchNamespace
+        value: kube-system
+      - name: kubeBenchDaemonsetName
+        value: kube-bench
+      - name: kubeBenchImage
+        value: aquasec/kube-bench:v0.14.1
+      - name: kubeBenchBenchmark
+        value: cis-1.11
+      - name: waitSeconds
+        value: "90"
+  templates:
+    - name: run
+      steps:
+        - - name: apply-daemonset
+            template: apply-daemonset
+        - - name: collect-results
+            template: collect-results
+    - name: apply-daemonset
+      container:
+        image: alpine/kubectl:1.35.0
+        command: ["/bin/sh", "-ceu"]
+        args:
+          - |
+            KUBECONFIG_FILE="$(mktemp)"
+            trap 'rm -f "${KUBECONFIG_FILE}"' EXIT
+
+            SECRET_NAMESPACE="{{workflow.parameters.kubeconfigSecretNamespace}}"
+            SECRET_NAME="{{workflow.parameters.kubeconfigSecretName}}"
+            SECRET_KEY="{{workflow.parameters.kubeconfigSecretKey}}"
+
+            KUBECONFIG_B64="$(kubectl -n "${SECRET_NAMESPACE}" get secret "${SECRET_NAME}" \
+              -o jsonpath="{.data.${SECRET_KEY}}" 2>/dev/null || true)"
+            if [ -z "${KUBECONFIG_B64}" ]; then
+              echo "kubeconfig secret missing: ${SECRET_NAMESPACE}/${SECRET_NAME}"
+              exit 1
+            fi
+
+            printf '%s' "${KUBECONFIG_B64}" | base64 -d > "${KUBECONFIG_FILE}"
+
+            BENCH_NAMESPACE="{{workflow.parameters.kubeBenchNamespace}}"
+            DS_NAME="{{workflow.parameters.kubeBenchDaemonsetName}}"
+            IMAGE="{{workflow.parameters.kubeBenchImage}}"
+            BENCHMARK="{{workflow.parameters.kubeBenchBenchmark}}"
+
+            cat <<YAML | kubectl --kubeconfig "${KUBECONFIG_FILE}" apply -f -
+            apiVersion: apps/v1
+            kind: DaemonSet
+            metadata:
+              name: ${DS_NAME}
+              namespace: ${BENCH_NAMESPACE}
+              labels:
+                app.kubernetes.io/name: kube-bench
+                app.kubernetes.io/part-of: security
+            spec:
+              selector:
+                matchLabels:
+                  app.kubernetes.io/name: kube-bench
+              template:
+                metadata:
+                  labels:
+                    app.kubernetes.io/name: kube-bench
+                spec:
+                  hostPID: true
+                  tolerations:
+                    - key: "node-role.kubernetes.io/control-plane"
+                      operator: "Exists"
+                      effect: "NoSchedule"
+                    - key: "node-role.kubernetes.io/master"
+                      operator: "Exists"
+                      effect: "NoSchedule"
+                  containers:
+                    - name: kube-bench
+                      image: ${IMAGE}
+                      securityContext:
+                        privileged: true
+                      command: ["kube-bench"]
+                      args:
+                        - "--benchmark"
+                        - "${BENCHMARK}"
+                        - "--stdout"
+                      volumeMounts:
+                        - name: host-etc
+                          mountPath: /etc
+                          readOnly: true
+                        - name: host-var
+                          mountPath: /var
+                          readOnly: true
+                  volumes:
+                    - name: host-etc
+                      hostPath:
+                        path: /etc
+                    - name: host-var
+                      hostPath:
+                        path: /var
+            YAML
+
+            echo "applied kube-bench daemonset ${BENCH_NAMESPACE}/${DS_NAME}"
+    - name: collect-results
+      container:
+        image: alpine/kubectl:1.35.0
+        command: ["/bin/sh", "-ceu"]
+        args:
+          - |
+            KUBECONFIG_FILE="$(mktemp)"
+            trap 'rm -f "${KUBECONFIG_FILE}"' EXIT
+
+            SECRET_NAMESPACE="{{workflow.parameters.kubeconfigSecretNamespace}}"
+            SECRET_NAME="{{workflow.parameters.kubeconfigSecretName}}"
+            SECRET_KEY="{{workflow.parameters.kubeconfigSecretKey}}"
+
+            KUBECONFIG_B64="$(kubectl -n "${SECRET_NAMESPACE}" get secret "${SECRET_NAME}" \
+              -o jsonpath="{.data.${SECRET_KEY}}" 2>/dev/null || true)"
+            if [ -z "${KUBECONFIG_B64}" ]; then
+              echo "kubeconfig secret missing: ${SECRET_NAMESPACE}/${SECRET_NAME}"
+              exit 1
+            fi
+
+            printf '%s' "${KUBECONFIG_B64}" | base64 -d > "${KUBECONFIG_FILE}"
+
+            BENCH_NAMESPACE="{{workflow.parameters.kubeBenchNamespace}}"
+            DS_NAME="{{workflow.parameters.kubeBenchDaemonsetName}}"
+            WAIT_SECONDS="{{workflow.parameters.waitSeconds}}"
+
+            kubectl --kubeconfig "${KUBECONFIG_FILE}" -n "${BENCH_NAMESPACE}" \
+              rollout status daemonset "${DS_NAME}" --timeout=5m || true
+
+            echo "waiting ${WAIT_SECONDS}s for kube-bench run"
+            sleep "${WAIT_SECONDS}"
+
+            RESULTS_FILE="$(mktemp)"
+            kubectl --kubeconfig "${KUBECONFIG_FILE}" -n "${BENCH_NAMESPACE}" \
+              logs -l app.kubernetes.io/name=kube-bench --all-containers=true --prefix=true \
+              > "${RESULTS_FILE}" || true
+
+            if [ ! -s "${RESULTS_FILE}" ]; then
+              echo "no kube-bench logs captured" > "${RESULTS_FILE}"
+            fi
+
+            RESULT_NAME="kube-bench-results-{{workflow.name}}"
+            kubectl -n argo create configmap "${RESULT_NAME}" \
+              --from-file=kube-bench.log="${RESULTS_FILE}" \
+              --dry-run=client -o yaml | kubectl -n argo apply -f -
+
+            echo "stored results in configmap argo/${RESULT_NAME}"
+    - name: cleanup
+      container:
+        image: alpine/kubectl:1.35.0
+        command: ["/bin/sh", "-ceu"]
+        args:
+          - |
+            KUBECONFIG_FILE="$(mktemp)"
+            trap 'rm -f "${KUBECONFIG_FILE}"' EXIT
+
+            SECRET_NAMESPACE="{{workflow.parameters.kubeconfigSecretNamespace}}"
+            SECRET_NAME="{{workflow.parameters.kubeconfigSecretName}}"
+            SECRET_KEY="{{workflow.parameters.kubeconfigSecretKey}}"
+
+            KUBECONFIG_B64="$(kubectl -n "${SECRET_NAMESPACE}" get secret "${SECRET_NAME}" \
+              -o jsonpath="{.data.${SECRET_KEY}}" 2>/dev/null || true)"
+            if [ -z "${KUBECONFIG_B64}" ]; then
+              echo "kubeconfig secret missing: ${SECRET_NAMESPACE}/${SECRET_NAME}"
+              exit 0
+            fi
+
+            printf '%s' "${KUBECONFIG_B64}" | base64 -d > "${KUBECONFIG_FILE}"
+
+            BENCH_NAMESPACE="{{workflow.parameters.kubeBenchNamespace}}"
+            DS_NAME="{{workflow.parameters.kubeBenchDaemonsetName}}"
+
+            kubectl --kubeconfig "${KUBECONFIG_FILE}" -n "${BENCH_NAMESPACE}" \
+              delete daemonset "${DS_NAME}" --ignore-not-found=true
+
+            echo "deleted kube-bench daemonset ${BENCH_NAMESPACE}/${DS_NAME}"
