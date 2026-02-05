@@ -6,7 +6,7 @@ metadata:
 spec:
   secretName: dex-tls
   dnsNames:
-    - dex.example.com
+    - dex.homelab.ntbc.io
   issuerRef:
     kind: ClusterIssuer
     name: homelab
