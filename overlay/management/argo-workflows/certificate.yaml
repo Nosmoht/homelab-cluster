@@ -6,7 +6,7 @@ metadata:
 spec:
   secretName: argo-workflows-server-tls
   dnsNames:
-    - argoworkflows.homelab.ntbc.io
+    - argoworkflows.example.com
   issuerRef:
     kind: ClusterIssuer
     name: homelab

@@ -3,22 +3,50 @@
 This repo runs a standalone Dex in the management cluster and uses it as the
 OIDC provider for:
 
-- Argo CD (`https://argocd.homelab.ntbc.io`)
-- Argo Workflows (`https://argoworkflows.homelab.ntbc.io`)
+- Argo CD (`https://$ARGOCD_HOST`)
+- Argo Workflows (`https://$ARGO_WORKFLOWS_HOST`)
 
 Dex endpoint:
 
-- `https://dex.homelab.ntbc.io`
+- `https://$DEX_HOST`
 
-## 1) Google OAuth prerequisites
+## 1) Set endpoint variables
+
+Use environment variables to define all DNS names consistently:
+
+```bash
+export SSO_BASE_DOMAIN="example.com"
+export DEX_HOST="dex.${SSO_BASE_DOMAIN}"
+export ARGOCD_HOST="argocd.${SSO_BASE_DOMAIN}"
+export ARGO_WORKFLOWS_HOST="argoworkflows.${SSO_BASE_DOMAIN}"
+```
+
+## 2) Google OAuth prerequisites
 
 In Google Cloud Console, create an OAuth client of type **Web application**.
 
 Required redirect URI:
 
-- `https://dex.homelab.ntbc.io/callback`
+- `https://${DEX_HOST}/callback`
 
-## 2) Configure the admin identity
+## 3) Configure SSO endpoints in manifests
+
+Update all SSO-related hostnames in manifests with one command:
+
+```bash
+./scripts/configure-sso-endpoints.sh
+```
+
+The script uses:
+
+- `SSO_BASE_DOMAIN` (default: `example.com`)
+- `DEX_HOST` (default: `dex.${SSO_BASE_DOMAIN}`)
+- `ARGOCD_HOST` (default: `argocd.${SSO_BASE_DOMAIN}`)
+- `ARGO_WORKFLOWS_HOST` (default: `argoworkflows.${SSO_BASE_DOMAIN}`)
+
+Review and commit the changed files before syncing with Argo CD.
+
+## 4) Configure the admin identity
 
 Before applying SSO manifests, set your own admin identity in both files:
 
@@ -44,7 +72,7 @@ for f in \
 done
 ```
 
-## 3) Scratch setup (minimal manual steps)
+## 5) Scratch setup (minimal manual steps)
 
 For a fresh cluster, run this once before creating SSO secrets.
 `scripts/bootstrap-sso.sh` performs exactly these bootstrap steps automatically.
@@ -73,7 +101,7 @@ Why this is needed:
 - On a brand-new setup this namespace may not exist yet, so secret creation fails.
 - The commands above remove that race and keep manual bootstrap to one short step.
 
-## 4) Create required secrets (manual mode)
+## 6) Create required secrets (manual mode)
 
 Export all required variables first:
 
@@ -107,6 +135,7 @@ The script uses these exported variables:
 - `GOOGLE_CLIENT_SECRET` (required)
 - `ARGOCD_OIDC_CLIENT_SECRET` (optional, auto-generated if unset)
 - `ARGO_WORKFLOWS_OIDC_CLIENT_SECRET` (optional, auto-generated if unset)
+- endpoint manifests must already be configured (no `example.com` placeholders)
 
 Manual fallback (equivalent to the script):
 
@@ -138,7 +167,7 @@ kubectl --context "${K8S_CONTEXT}" -n argo create secret generic argo-workflows-
   --dry-run=client -o yaml | kubectl --context "${K8S_CONTEXT}" apply -f -
 ```
 
-## 5) Validation
+## 7) Validation
 
 ```bash
 kubectl --context "${K8S_CONTEXT}" -n dex get deploy,pod,svc,ingress,certificate
@@ -156,6 +185,9 @@ Then test logins:
 - Argo CD internal Dex deployment is intentionally scaled to `0`.
 - `sso-admin@example.com` is a placeholder and must be replaced with your own
   identity before rollout.
+- Endpoint hostnames are intentionally generic. Set your domain via
+  `SSO_BASE_DOMAIN` / `DEX_HOST` / `ARGOCD_HOST` / `ARGO_WORKFLOWS_HOST` and
+  run `./scripts/configure-sso-endpoints.sh`.
 - Argo Workflows SSO RBAC maps your configured admin identity to admin and all
   other authenticated users to read-only.
 - Rotate OAuth client secrets immediately if they were ever shared in plaintext.

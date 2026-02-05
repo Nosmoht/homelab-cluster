@@ -14,6 +14,16 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 MANAGEMENT_ROOT_APP="${REPO_ROOT}/apps/management-root.yaml"
 ARGOCD_RBAC_PATCH="${REPO_ROOT}/overlay/management/argocd/argocd-rbac-cm-sso-patch.yaml"
 WORKFLOWS_RBAC_PATCH="${REPO_ROOT}/overlay/management/argo-workflows/sso-rbac.yaml"
+SSO_ENDPOINT_FILES=(
+  "${REPO_ROOT}/overlay/management/dex/configmap.yaml"
+  "${REPO_ROOT}/overlay/management/dex/ingress.yaml"
+  "${REPO_ROOT}/overlay/management/dex/certificate.yaml"
+  "${REPO_ROOT}/overlay/management/argocd/argocd-cm-patch.yaml"
+  "${REPO_ROOT}/overlay/management/argocd/ingress.yaml"
+  "${REPO_ROOT}/overlay/management/argo-workflows/workflow-controller-configmap-sso-patch.yaml"
+  "${REPO_ROOT}/overlay/management/argo-workflows/ingress.yaml"
+  "${REPO_ROOT}/overlay/management/argo-workflows/certificate.yaml"
+)
 
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -54,6 +64,7 @@ wait_for_argocd_secret() {
 }
 
 require_cmd kubectl
+require_cmd grep
 
 if [[ -z "${GOOGLE_CLIENT_ID}" || -z "${GOOGLE_CLIENT_SECRET}" ]]; then
   cat >&2 <<'EOF'
@@ -62,6 +73,19 @@ error: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be exported.
 Example:
   export GOOGLE_CLIENT_ID="<GOOGLE_CLIENT_ID>"
   export GOOGLE_CLIENT_SECRET="<GOOGLE_CLIENT_SECRET>"
+EOF
+  exit 1
+fi
+
+if grep -q "example.com" "${SSO_ENDPOINT_FILES[@]}"; then
+  cat >&2 <<'EOF'
+error: generic SSO endpoint placeholders detected (example.com).
+
+Configure endpoint hosts first:
+  export SSO_BASE_DOMAIN="<your-domain>"
+  ./scripts/configure-sso-endpoints.sh
+
+Then review/commit the manifest changes and re-run this script.
 EOF
   exit 1
 fi
