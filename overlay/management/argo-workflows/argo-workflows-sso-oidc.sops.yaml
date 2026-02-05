@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: argo-workflows-sso-oidc
+    namespace: argo
+    annotations:
+        kustomize.config.k8s.io/behavior: replace
+type: Opaque
+stringData:
+    client-id: ENC[AES256_GCM,data:uqmMnSmXb+VRj745Vkc=,iv:HQhDyG1jbPGk+3jQ8GfhMHNNnnNMAY7R+WQaQlPAn34=,tag:W2a0IS/3gz3nE6hXmyQHUw==,type:str]
+    client-secret: ENC[AES256_GCM,data:NA9H0kT9s2zBz+qfiJaddluu/eVKgn9/cuyHvbdQBuWBLIm1Tye0GGZzX89W75H/EIwFYNAPyo1ZSgX3CfBEJQ==,iv:hlehwMnEeRK/vCVoQFom4KsVXd9dyhUZsbQvO8rQQyk=,tag:wRqNgFCkvyADozJIZZvmlQ==,type:str]
+sops:
+    age:
+        - recipient: age1t7jy2m2pqwnwfhx0dk85trhw9aae9qln9ng6m4tgy47jk3ngr93spv0hsg
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBxbjNuZklBSG13UXNSLzdp
+            RGZxOUFaMytBZUhJdjB1eTR4ajBvcXF2QlE0ClRYL3JlRnk5ajdkVkhRUDBna0g3
+            dnBnUDdBK1dCRWo0MWJoeW1aS0VtbVEKLS0tIGhVTEkyenRrbVNBR1NZQmxjRFVK
+            YVpLWE9FWDFUY3BNK1FxQnZvSGc3TVkKI8I0YV1gm4sP4HkzoEL2S6fnIz6B/rbs
+            4pKOHYDetc3RvGJREbR/gH/36OHLRoWVA5DzmVpZy/LYgN5eS4W0og==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-02-05T16:00:43Z"
+    mac: ENC[AES256_GCM,data:11fDNzwlyMcOppais0GrCnAOsDhwNJ03QkeYSlleCcljum9mnXhQJiSNQVS2qVsJcNJ7h6RNyz/9oTEXNuApL8nhGij3ymYEvIyEzBRglbmMk7qVFUUXvrO9vQP47R0H+P06Zeqgakgkevwwo+dSD9QiefYTFtejXdis8Jycngc=,iv:jhdIzQBjAEaJHf6WnVW/jh3e21y6+RazLZbFM2m5/Bs=,tag:wK0OBRO+eXq8rlYKe+l16g==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.11.0
