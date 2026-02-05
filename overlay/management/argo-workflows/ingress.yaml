@@ -8,7 +8,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: argoworkflows.homelab.ntbc.io
+    - host: argoworkflows.example.com
       http:
         paths:
           - path: /
@@ -20,5 +20,5 @@ spec:
                   name: web
   tls:
     - hosts:
-        - argoworkflows.homelab.ntbc.io
+        - argoworkflows.example.com
       secretName: argo-workflows-server-tls

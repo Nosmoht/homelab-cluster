@@ -5,7 +5,7 @@ metadata:
   namespace: argo
 data:
   sso: |
-    issuer: https://dex.homelab.ntbc.io
+    issuer: https://dex.example.com
     sessionExpiry: 12h
     clientId:
       name: argo-workflows-sso-oidc
@@ -13,7 +13,7 @@ data:
     clientSecret:
       name: argo-workflows-sso-oidc
       key: client-secret
-    redirectUrl: https://argoworkflows.homelab.ntbc.io/oauth2/callback
+    redirectUrl: https://argoworkflows.example.com/oauth2/callback
     scopes:
       - openid
       - profile

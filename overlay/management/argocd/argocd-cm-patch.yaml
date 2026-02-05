@@ -3,10 +3,10 @@ kind: ConfigMap
 metadata:
   name: argocd-cm
 data:
-  url: https://argocd.homelab.ntbc.io
+  url: https://argocd.example.com
   oidc.config: |
     name: Dex
-    issuer: https://dex.homelab.ntbc.io
+    issuer: https://dex.example.com
     clientID: argocd
     clientSecret: $oidc.dex.clientSecret
     requestedScopes:

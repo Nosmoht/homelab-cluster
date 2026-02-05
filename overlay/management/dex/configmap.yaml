@@ -5,7 +5,7 @@ metadata:
   namespace: dex
 data:
   config.yaml: |
-    issuer: https://dex.homelab.ntbc.io
+    issuer: https://dex.example.com
     storage:
       type: kubernetes
       config:
@@ -21,17 +21,17 @@ data:
         config:
           clientID: $GOOGLE_CLIENT_ID
           clientSecret: $GOOGLE_CLIENT_SECRET
-          redirectURI: https://dex.homelab.ntbc.io/callback
+          redirectURI: https://dex.example.com/callback
     oauth2:
       skipApprovalScreen: true
     staticClients:
       - id: argocd
         name: Argo CD
         redirectURIs:
-          - https://argocd.homelab.ntbc.io/auth/callback
+          - https://argocd.example.com/auth/callback
         secretEnv: ARGOCD_OIDC_CLIENT_SECRET
       - id: argo-workflows
         name: Argo Workflows
         redirectURIs:
-          - https://argoworkflows.homelab.ntbc.io/oauth2/callback
+          - https://argoworkflows.example.com/oauth2/callback
         secretEnv: ARGO_WORKFLOWS_OIDC_CLIENT_SECRET
