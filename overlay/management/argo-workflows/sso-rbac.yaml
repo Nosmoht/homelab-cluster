@@ -4,7 +4,7 @@ metadata:
   name: argo-workflows-sso-admin
   namespace: argo
   annotations:
-    workflows.argoproj.io/rbac-rule: "email == 'sso-admin@example.com' || sub == 'sso-admin@example.com'"
+    workflows.argoproj.io/rbac-rule: "email == 'thomas.krahn.tk@gmail.com' || sub == 'thomas.krahn.tk@gmail.com'"
     workflows.argoproj.io/rbac-rule-precedence: "1"
 ---
 apiVersion: v1
