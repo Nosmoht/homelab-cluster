@@ -20,38 +20,59 @@ Required redirect URI:
 
 ## 2) Create required secrets (manual mode)
 
-Create Dex connector + static client secrets:
+Export all required variables first:
 
 ```bash
-kubectl --context admin@sidero -n dex create secret generic dex-oidc-secrets \
-  --from-literal=google-client-id='<GOOGLE_CLIENT_ID>' \
-  --from-literal=google-client-secret='<GOOGLE_CLIENT_SECRET>' \
-  --from-literal=argocd-oidc-client-secret='<RANDOM_SECRET>' \
-  --from-literal=argo-workflows-oidc-client-secret='<RANDOM_SECRET>'
+export K8S_CONTEXT="admin@sidero"
+export GOOGLE_CLIENT_ID="<GOOGLE_CLIENT_ID>"
+export GOOGLE_CLIENT_SECRET="<GOOGLE_CLIENT_SECRET>"
+
+# Generate strong client secrets (2 x random 32-byte values).
+export ARGOCD_OIDC_CLIENT_SECRET="$(openssl rand -hex 32)"
+export ARGO_WORKFLOWS_OIDC_CLIENT_SECRET="$(openssl rand -hex 32)"
 ```
 
-Create Argo CD OIDC client secret (must match Dex static client secret):
+If `openssl` is not available, use Python instead:
 
 ```bash
-kubectl --context admin@sidero -n argocd patch secret argocd-secret \
+export ARGOCD_OIDC_CLIENT_SECRET="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+export ARGO_WORKFLOWS_OIDC_CLIENT_SECRET="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+```
+
+Create/update Dex connector + static client secrets:
+
+```bash
+kubectl --context "${K8S_CONTEXT}" -n dex create secret generic dex-oidc-secrets \
+  --from-literal=google-client-id="${GOOGLE_CLIENT_ID}" \
+  --from-literal=google-client-secret="${GOOGLE_CLIENT_SECRET}" \
+  --from-literal=argocd-oidc-client-secret="${ARGOCD_OIDC_CLIENT_SECRET}" \
+  --from-literal=argo-workflows-oidc-client-secret="${ARGO_WORKFLOWS_OIDC_CLIENT_SECRET}" \
+  --dry-run=client -o yaml | kubectl --context "${K8S_CONTEXT}" apply -f -
+```
+
+Patch Argo CD OIDC client secret (must match Dex static client secret):
+
+```bash
+kubectl --context "${K8S_CONTEXT}" -n argocd patch secret argocd-secret \
   --type merge \
-  -p '{"stringData":{"oidc.dex.clientSecret":"<SAME_ARGOCD_SECRET_AS_IN_DEX>"}}'
+  -p "{\"stringData\":{\"oidc.dex.clientSecret\":\"${ARGOCD_OIDC_CLIENT_SECRET}\"}}"
 ```
 
-Create Argo Workflows OIDC client secret (must match Dex static client secret):
+Create/update Argo Workflows OIDC client secret (must match Dex static client secret):
 
 ```bash
-kubectl --context admin@sidero -n argo create secret generic argo-workflows-sso-oidc \
-  --from-literal=client-id='argo-workflows' \
-  --from-literal=client-secret='<SAME_WORKFLOWS_SECRET_AS_IN_DEX>'
+kubectl --context "${K8S_CONTEXT}" -n argo create secret generic argo-workflows-sso-oidc \
+  --from-literal=client-id="argo-workflows" \
+  --from-literal=client-secret="${ARGO_WORKFLOWS_OIDC_CLIENT_SECRET}" \
+  --dry-run=client -o yaml | kubectl --context "${K8S_CONTEXT}" apply -f -
 ```
 
 ## 3) Validation
 
 ```bash
-kubectl --context admin@sidero -n dex get deploy,pod,svc,ingress,certificate
-kubectl --context admin@sidero -n argocd get cm argocd-cm argocd-rbac-cm
-kubectl --context admin@sidero -n argo get cm workflow-controller-configmap deploy argo-server
+kubectl --context "${K8S_CONTEXT}" -n dex get deploy,pod,svc,ingress,certificate
+kubectl --context "${K8S_CONTEXT}" -n argocd get cm argocd-cm argocd-rbac-cm
+kubectl --context "${K8S_CONTEXT}" -n argo get cm workflow-controller-configmap deploy argo-server
 ```
 
 Then test logins:
