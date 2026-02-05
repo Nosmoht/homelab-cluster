@@ -145,19 +145,19 @@ spec:
                         - "${BENCHMARK}"
                         - "--stdout"
                       volumeMounts:
-                        - name: host-etc
-                          mountPath: /etc
+                        - name: host-etc-kubernetes
+                          mountPath: /etc/kubernetes
                           readOnly: true
-                        - name: host-var
-                          mountPath: /var
+                        - name: host-var-lib
+                          mountPath: /var/lib
                           readOnly: true
                   volumes:
-                    - name: host-etc
+                    - name: host-etc-kubernetes
                       hostPath:
-                        path: /etc
-                    - name: host-var
+                        path: /etc/kubernetes
+                    - name: host-var-lib
                       hostPath:
-                        path: /var
+                        path: /var/lib
             YAML
 
             echo "applied kube-bench daemonset ${BENCH_NAMESPACE}/${DS_NAME}"
