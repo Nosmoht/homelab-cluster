@@ -11,10 +11,14 @@ spec:
     secondsAfterFailure: 86400
   arguments:
     parameters:
+      - name: clusterNamespace
+        value: default
+      - name: clusterName
+        value: homelab
       - name: kubeconfigSecretNamespace
         value: default
       - name: kubeconfigSecretName
-        value: homelab-kubeconfig
+        value: auto
       - name: kubeconfigSecretKey
         value: value
       - name: kubeBenchNamespace
@@ -43,18 +47,61 @@ spec:
             KUBECONFIG_FILE="$(mktemp)"
             trap 'rm -f "${KUBECONFIG_FILE}"' EXIT
 
-            SECRET_NAMESPACE="{{workflow.parameters.kubeconfigSecretNamespace}}"
-            SECRET_NAME="{{workflow.parameters.kubeconfigSecretName}}"
-            SECRET_KEY="{{workflow.parameters.kubeconfigSecretKey}}"
+            resolve_kubeconfig() {
+              ALLOW_MISSING="${1:-false}"
 
-            KUBECONFIG_B64="$(kubectl -n "${SECRET_NAMESPACE}" get secret "${SECRET_NAME}" \
-              -o jsonpath="{.data.${SECRET_KEY}}" 2>/dev/null || true)"
-            if [ -z "${KUBECONFIG_B64}" ]; then
-              echo "kubeconfig secret missing: ${SECRET_NAMESPACE}/${SECRET_NAME}"
-              exit 1
-            fi
+              SECRET_NAMESPACE="{{workflow.parameters.kubeconfigSecretNamespace}}"
+              SECRET_NAME="{{workflow.parameters.kubeconfigSecretName}}"
+              SECRET_KEY="{{workflow.parameters.kubeconfigSecretKey}}"
 
-            printf '%s' "${KUBECONFIG_B64}" | base64 -d > "${KUBECONFIG_FILE}"
+              if [ "${SECRET_NAME}" = "auto" ]; then
+                CLUSTER_NAMESPACE="{{workflow.parameters.clusterNamespace}}"
+                CLUSTER_NAME="{{workflow.parameters.clusterName}}"
+
+                if [ -z "${CLUSTER_NAME}" ]; then
+                  echo "clusterName is required when kubeconfigSecretName=auto"
+                  exit 1
+                fi
+
+                SECRET_NAMESPACE="${CLUSTER_NAMESPACE}"
+                NAMES="$(kubectl -n "${CLUSTER_NAMESPACE}" get secret \
+                  -l "cluster.x-k8s.io/cluster-name=${CLUSTER_NAME}" \
+                  -o jsonpath='{.items[*].metadata.name}' 2>/dev/null || true)"
+
+                MATCHED=""
+                for name in ${NAMES}; do
+                  case "${name}" in
+                    *-kubeconfig) MATCHED="${MATCHED} ${name}" ;;
+                  esac
+                done
+
+                set -- ${MATCHED}
+                if [ "$#" -eq 0 ]; then
+                  echo "no kubeconfig secret found for cluster ${CLUSTER_NAMESPACE}/${CLUSTER_NAME}"
+                  exit 1
+                fi
+                if [ "$#" -gt 1 ]; then
+                  echo "multiple kubeconfig secrets found for cluster ${CLUSTER_NAMESPACE}/${CLUSTER_NAME}: ${MATCHED}"
+                  exit 1
+                fi
+                SECRET_NAME="$1"
+              fi
+
+              KUBECONFIG_B64="$(kubectl -n "${SECRET_NAMESPACE}" get secret "${SECRET_NAME}" \
+                -o jsonpath="{.data.${SECRET_KEY}}" 2>/dev/null || true)"
+              if [ -z "${KUBECONFIG_B64}" ]; then
+                if [ "${ALLOW_MISSING}" = "true" ]; then
+                  echo "kubeconfig secret missing: ${SECRET_NAMESPACE}/${SECRET_NAME}"
+                  return 1
+                fi
+                echo "kubeconfig secret missing: ${SECRET_NAMESPACE}/${SECRET_NAME}"
+                exit 1
+              fi
+
+              printf '%s' "${KUBECONFIG_B64}" | base64 -d > "${KUBECONFIG_FILE}"
+            }
+
+            resolve_kubeconfig
 
             BENCH_NAMESPACE="{{workflow.parameters.kubeBenchNamespace}}"
             DS_NAME="{{workflow.parameters.kubeBenchDaemonsetName}}"
@@ -123,18 +170,61 @@ spec:
             KUBECONFIG_FILE="$(mktemp)"
             trap 'rm -f "${KUBECONFIG_FILE}"' EXIT
 
-            SECRET_NAMESPACE="{{workflow.parameters.kubeconfigSecretNamespace}}"
-            SECRET_NAME="{{workflow.parameters.kubeconfigSecretName}}"
-            SECRET_KEY="{{workflow.parameters.kubeconfigSecretKey}}"
+            resolve_kubeconfig() {
+              ALLOW_MISSING="${1:-false}"
 
-            KUBECONFIG_B64="$(kubectl -n "${SECRET_NAMESPACE}" get secret "${SECRET_NAME}" \
-              -o jsonpath="{.data.${SECRET_KEY}}" 2>/dev/null || true)"
-            if [ -z "${KUBECONFIG_B64}" ]; then
-              echo "kubeconfig secret missing: ${SECRET_NAMESPACE}/${SECRET_NAME}"
-              exit 1
-            fi
+              SECRET_NAMESPACE="{{workflow.parameters.kubeconfigSecretNamespace}}"
+              SECRET_NAME="{{workflow.parameters.kubeconfigSecretName}}"
+              SECRET_KEY="{{workflow.parameters.kubeconfigSecretKey}}"
 
-            printf '%s' "${KUBECONFIG_B64}" | base64 -d > "${KUBECONFIG_FILE}"
+              if [ "${SECRET_NAME}" = "auto" ]; then
+                CLUSTER_NAMESPACE="{{workflow.parameters.clusterNamespace}}"
+                CLUSTER_NAME="{{workflow.parameters.clusterName}}"
+
+                if [ -z "${CLUSTER_NAME}" ]; then
+                  echo "clusterName is required when kubeconfigSecretName=auto"
+                  exit 1
+                fi
+
+                SECRET_NAMESPACE="${CLUSTER_NAMESPACE}"
+                NAMES="$(kubectl -n "${CLUSTER_NAMESPACE}" get secret \
+                  -l "cluster.x-k8s.io/cluster-name=${CLUSTER_NAME}" \
+                  -o jsonpath='{.items[*].metadata.name}' 2>/dev/null || true)"
+
+                MATCHED=""
+                for name in ${NAMES}; do
+                  case "${name}" in
+                    *-kubeconfig) MATCHED="${MATCHED} ${name}" ;;
+                  esac
+                done
+
+                set -- ${MATCHED}
+                if [ "$#" -eq 0 ]; then
+                  echo "no kubeconfig secret found for cluster ${CLUSTER_NAMESPACE}/${CLUSTER_NAME}"
+                  exit 1
+                fi
+                if [ "$#" -gt 1 ]; then
+                  echo "multiple kubeconfig secrets found for cluster ${CLUSTER_NAMESPACE}/${CLUSTER_NAME}: ${MATCHED}"
+                  exit 1
+                fi
+                SECRET_NAME="$1"
+              fi
+
+              KUBECONFIG_B64="$(kubectl -n "${SECRET_NAMESPACE}" get secret "${SECRET_NAME}" \
+                -o jsonpath="{.data.${SECRET_KEY}}" 2>/dev/null || true)"
+              if [ -z "${KUBECONFIG_B64}" ]; then
+                if [ "${ALLOW_MISSING}" = "true" ]; then
+                  echo "kubeconfig secret missing: ${SECRET_NAMESPACE}/${SECRET_NAME}"
+                  return 1
+                fi
+                echo "kubeconfig secret missing: ${SECRET_NAMESPACE}/${SECRET_NAME}"
+                exit 1
+              fi
+
+              printf '%s' "${KUBECONFIG_B64}" | base64 -d > "${KUBECONFIG_FILE}"
+            }
+
+            resolve_kubeconfig
 
             BENCH_NAMESPACE="{{workflow.parameters.kubeBenchNamespace}}"
             DS_NAME="{{workflow.parameters.kubeBenchDaemonsetName}}"
@@ -170,18 +260,63 @@ spec:
             KUBECONFIG_FILE="$(mktemp)"
             trap 'rm -f "${KUBECONFIG_FILE}"' EXIT
 
-            SECRET_NAMESPACE="{{workflow.parameters.kubeconfigSecretNamespace}}"
-            SECRET_NAME="{{workflow.parameters.kubeconfigSecretName}}"
-            SECRET_KEY="{{workflow.parameters.kubeconfigSecretKey}}"
+            resolve_kubeconfig() {
+              ALLOW_MISSING="${1:-false}"
 
-            KUBECONFIG_B64="$(kubectl -n "${SECRET_NAMESPACE}" get secret "${SECRET_NAME}" \
-              -o jsonpath="{.data.${SECRET_KEY}}" 2>/dev/null || true)"
-            if [ -z "${KUBECONFIG_B64}" ]; then
-              echo "kubeconfig secret missing: ${SECRET_NAMESPACE}/${SECRET_NAME}"
+              SECRET_NAMESPACE="{{workflow.parameters.kubeconfigSecretNamespace}}"
+              SECRET_NAME="{{workflow.parameters.kubeconfigSecretName}}"
+              SECRET_KEY="{{workflow.parameters.kubeconfigSecretKey}}"
+
+              if [ "${SECRET_NAME}" = "auto" ]; then
+                CLUSTER_NAMESPACE="{{workflow.parameters.clusterNamespace}}"
+                CLUSTER_NAME="{{workflow.parameters.clusterName}}"
+
+                if [ -z "${CLUSTER_NAME}" ]; then
+                  echo "clusterName is required when kubeconfigSecretName=auto"
+                  exit 1
+                fi
+
+                SECRET_NAMESPACE="${CLUSTER_NAMESPACE}"
+                NAMES="$(kubectl -n "${CLUSTER_NAMESPACE}" get secret \
+                  -l "cluster.x-k8s.io/cluster-name=${CLUSTER_NAME}" \
+                  -o jsonpath='{.items[*].metadata.name}' 2>/dev/null || true)"
+
+                MATCHED=""
+                for name in ${NAMES}; do
+                  case "${name}" in
+                    *-kubeconfig) MATCHED="${MATCHED} ${name}" ;;
+                  esac
+                done
+
+                set -- ${MATCHED}
+                if [ "$#" -eq 0 ]; then
+                  echo "no kubeconfig secret found for cluster ${CLUSTER_NAMESPACE}/${CLUSTER_NAME}"
+                  exit 1
+                fi
+                if [ "$#" -gt 1 ]; then
+                  echo "multiple kubeconfig secrets found for cluster ${CLUSTER_NAMESPACE}/${CLUSTER_NAME}: ${MATCHED}"
+                  exit 1
+                fi
+                SECRET_NAME="$1"
+              fi
+
+              KUBECONFIG_B64="$(kubectl -n "${SECRET_NAMESPACE}" get secret "${SECRET_NAME}" \
+                -o jsonpath="{.data.${SECRET_KEY}}" 2>/dev/null || true)"
+              if [ -z "${KUBECONFIG_B64}" ]; then
+                if [ "${ALLOW_MISSING}" = "true" ]; then
+                  echo "kubeconfig secret missing: ${SECRET_NAMESPACE}/${SECRET_NAME}"
+                  return 1
+                fi
+                echo "kubeconfig secret missing: ${SECRET_NAMESPACE}/${SECRET_NAME}"
+                exit 1
+              fi
+
+              printf '%s' "${KUBECONFIG_B64}" | base64 -d > "${KUBECONFIG_FILE}"
+            }
+
+            if ! resolve_kubeconfig true; then
               exit 0
             fi
-
-            printf '%s' "${KUBECONFIG_B64}" | base64 -d > "${KUBECONFIG_FILE}"
 
             BENCH_NAMESPACE="{{workflow.parameters.kubeBenchNamespace}}"
             DS_NAME="{{workflow.parameters.kubeBenchDaemonsetName}}"
