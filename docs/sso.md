@@ -34,9 +34,14 @@ export SSO_ADMIN_EMAIL="you@example.com"
 Then update both files (or edit them manually):
 
 ```bash
-perl -pi -e "s/sso-admin\\@example\\.com/${SSO_ADMIN_EMAIL}/g" \
+SSO_ADMIN_EMAIL_ESCAPED="$(printf '%s\n' "${SSO_ADMIN_EMAIL}" | sed 's/[&/]/\\&/g')"
+
+for f in \
   overlay/management/argocd/argocd-rbac-cm-sso-patch.yaml \
-  overlay/management/argo-workflows/sso-rbac.yaml
+  overlay/management/argo-workflows/sso-rbac.yaml; do
+  sed "s/sso-admin@example.com/${SSO_ADMIN_EMAIL_ESCAPED}/g" "${f}" > "${f}.tmp"
+  mv "${f}.tmp" "${f}"
+done
 ```
 
 ## 3) Scratch setup (minimal manual steps)
