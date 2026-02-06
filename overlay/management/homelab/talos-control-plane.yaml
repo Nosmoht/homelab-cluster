@@ -14,9 +14,6 @@ spec:
                 name: none
             proxy:
               disabled: true
-            kubePrism:
-              enabled: true
-              port: 7445
             extraManifests:
               - https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/v0.10.2/deploy/standalone-install.yaml
               - https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.8.1/components.yaml
@@ -1679,6 +1676,10 @@ spec:
                           configMap:
                             name: cilium-config
           machine:
+            features:
+              kubePrism:
+                enabled: true
+                port: 7445
             install:
               image: factory.talos.dev/installer/797d93756de3d25be5830c940abc717e72ca4c7130c70ab292b7a337888f322a:v1.12.2
             kubelet:
@@ -1704,9 +1705,6 @@ spec:
                 name: none
             proxy:
               disabled: true
-            kubePrism:
-              enabled: true
-              port: 7445
             extraManifests:
               - https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/v0.10.2/deploy/standalone-install.yaml
               - https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.8.1/components.yaml
@@ -3369,6 +3367,10 @@ spec:
                           configMap:
                             name: cilium-config
           machine:
+            features:
+              kubePrism:
+                enabled: true
+                port: 7445
             install:
               image: factory.talos.dev/installer/797d93756de3d25be5830c940abc717e72ca4c7130c70ab292b7a337888f322a:v1.12.2
             kubelet:
