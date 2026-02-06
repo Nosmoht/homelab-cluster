@@ -13,6 +13,9 @@ spec:
                 name: none
             proxy:
               disabled: true
+            kubePrism:
+              enabled: true
+              port: 7445
           machine:
             install:
               image: factory.talos.dev/installer/797d93756de3d25be5830c940abc717e72ca4c7130c70ab292b7a337888f322a:v1.12.2
