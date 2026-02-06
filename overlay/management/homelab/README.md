@@ -11,6 +11,11 @@ Pinned versions in these manifests:
 - kubelet-serving-cert-approver: `v0.10.2`
 - metrics-server: `v0.8.1`
 
+## Cilium bootstrap notes
+
+- Cilium is configured to talk to the API server via kubePrism (`localhost:7445`).
+- Talos explicitly enables kubePrism to ensure Cilium can reach the API during bootstrap.
+
 ## Talos image factory schematic
 
 - Schematic ID: `797d93756de3d25be5830c940abc717e72ca4c7130c70ab292b7a337888f322a`
