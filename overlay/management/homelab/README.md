@@ -7,6 +7,7 @@ Pinned versions in these manifests:
 
 - Talos: `v1.12.2`
 - Kubernetes: `v1.35.0`
+- Cilium: `v1.19.0` (inline manifest, kube-proxy replacement enabled, Hubble disabled)
 - kubelet-serving-cert-approver: `v0.10.2`
 - metrics-server: `v0.8.1`
 
