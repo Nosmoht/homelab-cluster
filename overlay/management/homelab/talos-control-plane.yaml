@@ -14,6 +14,9 @@ spec:
                 name: none
             proxy:
               disabled: true
+            kubePrism:
+              enabled: true
+              port: 7445
             extraManifests:
               - https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/v0.10.2/deploy/standalone-install.yaml
               - https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.8.1/components.yaml
@@ -1701,6 +1704,9 @@ spec:
                 name: none
             proxy:
               disabled: true
+            kubePrism:
+              enabled: true
+              port: 7445
             extraManifests:
               - https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/v0.10.2/deploy/standalone-install.yaml
               - https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.8.1/components.yaml
