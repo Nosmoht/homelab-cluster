@@ -7,6 +7,12 @@ spec:
     spec:
       strategicPatches:
         - |
+          cluster:
+            network:
+              cni:
+                name: none
+            proxy:
+              disabled: true
           machine:
             install:
               image: factory.talos.dev/installer/797d93756de3d25be5830c940abc717e72ca4c7130c70ab292b7a337888f322a:v1.12.2
