@@ -3,8 +3,7 @@ kind: Kustomization
 namespace: argo
 resources:
   - ../../../base/argo-workflows/v4.0.0
-  - ingress.yaml
-  - certificate.yaml
+  - httproute.yaml
   - sso-rbac.yaml
   - kube-bench-rbac.yaml
   - kube-bench-workflowtemplate.yaml

@@ -9,6 +9,8 @@ resources:
   - argo-events.yaml
   - capi-argocd-bridge.yaml
   - cert-manager.yaml
+  - envoy-gateway.yaml
+  - gateway-api.yaml
   - workload-applicationset.yaml
   - cluster-api-operator.yaml
   - cluster-api.yaml
