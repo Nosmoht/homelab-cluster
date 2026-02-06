@@ -8,8 +8,7 @@ resources:
   - configmap.yaml
   - service.yaml
   - deployment.yaml
-  - ingress.yaml
-  - certificate.yaml
+  - httproute.yaml
 
 generators:
   - dex-oidc-secrets-generator.yaml

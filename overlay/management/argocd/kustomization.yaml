@@ -4,12 +4,16 @@ namespace: argocd
 resources:
   - namespace.yaml
   - ../../../base/argocd/v3.3.0
-  - ingress.yaml
+  - httproute.yaml
 patches:
   - path: argocd-cm-patch.yaml
     target:
       kind: ConfigMap
       name: argocd-cm
+  - path: argocd-cmd-params-gateway-patch.yaml
+    target:
+      kind: ConfigMap
+      name: argocd-cmd-params-cm
   - path: argocd-rbac-cm-sso-patch.yaml
     target:
       kind: ConfigMap

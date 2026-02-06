@@ -12,3 +12,7 @@ spec:
             - server
             - --auth-mode=sso
             - --auth-mode=client
+            - --secure=false
+          readinessProbe:
+            httpGet:
+              scheme: HTTP
