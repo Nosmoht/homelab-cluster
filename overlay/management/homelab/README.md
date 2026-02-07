@@ -18,9 +18,11 @@ Pinned versions in these manifests:
 
 ## Talos image factory schematic
 
-- Schematic ID: `797d93756de3d25be5830c940abc717e72ca4c7130c70ab292b7a337888f322a`
+- Schematic ID: `e048aaf4461ff9f9576c9a42f760f2fef566559bd4933f322853ac291e46f238`
 - Installer image:
-  - `factory.talos.dev/installer/797d93756de3d25be5830c940abc717e72ca4c7130c70ab292b7a337888f322a:v1.12.2`
+  - `factory.talos.dev/installer/e048aaf4461ff9f9576c9a42f760f2fef566559bd4933f322853ac291e46f238:v1.12.2`
+- System extensions:
+  - `siderolabs/drbd`
 
 ## Local-only files
 
