@@ -1,0 +1,7 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: argo-events
+resources:
+  - event-source-capi-rollout.yaml
+  - sensor-capi-rollout.yaml
+  - rbac.yaml

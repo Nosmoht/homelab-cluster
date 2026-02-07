@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: EventSource
+metadata:
+  name: capi-rollout
+  namespace: argo-events
+spec:
+  template:
+    serviceAccountName: capi-rollout
+  service:
+    ports:
+      - port: 12010
+        targetPort: 12010
+  resource:
+    tcp-upsert:
+      group: controlplane.cluster.x-k8s.io
+      version: v1alpha3
+      resource: taloscontrolplanes
+      eventTypes:
+        - ADD
+        - UPDATE
+    md-upsert:
+      group: cluster.x-k8s.io
+      version: v1beta1
+      resource: machinedeployments
+      eventTypes:
+        - ADD
+        - UPDATE

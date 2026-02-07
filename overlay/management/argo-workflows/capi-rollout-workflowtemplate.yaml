@@ -1,0 +1,250 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: capi-rollout-orchestrator
+spec:
+  serviceAccountName: capi-rollout-runner
+  entrypoint: rollout
+  ttlStrategy:
+    secondsAfterSuccess: 86400
+    secondsAfterFailure: 86400
+  arguments:
+    parameters:
+      - name: clusterName
+      - name: clusterNamespace
+        value: default
+      - name: pollInterval
+        value: 30s
+      - name: controlPlaneTimeout
+        value: 45m
+      - name: workersTimeout
+        value: 60m
+      - name: maxRemediations
+        value: "2"
+      - name: rebootMode
+        value: powercycle
+  templates:
+    - name: rollout
+      steps:
+        - - name: rollout-control-plane
+            template: rollout-scope
+            arguments:
+              parameters:
+                - name: scope
+                  value: controlplane
+        - - name: rollout-workers
+            template: rollout-scope
+            arguments:
+              parameters:
+                - name: scope
+                  value: workers
+    - name: rollout-scope
+      inputs:
+        parameters:
+          - name: scope
+      container:
+        image: alpine/kubectl:1.35.0
+        command: ["/bin/sh", "-ceu"]
+        args:
+          - |
+            CLUSTER_NAME="{{workflow.parameters.clusterName}}"
+            CLUSTER_NAMESPACE="{{workflow.parameters.clusterNamespace}}"
+            POLL_INTERVAL="{{workflow.parameters.pollInterval}}"
+            MAX_REMEDIATIONS="{{workflow.parameters.maxRemediations}}"
+            REBOOT_MODE="{{workflow.parameters.rebootMode}}"
+            SCOPE="{{inputs.parameters.scope}}"
+
+            if [ -z "${CLUSTER_NAME}" ]; then
+              echo "clusterName is required"
+              exit 1
+            fi
+
+            duration_to_seconds() {
+              value="$1"
+              case "$value" in
+                *h) echo $(( ${value%h} * 3600 )) ;;
+                *m) echo $(( ${value%m} * 60 )) ;;
+                *s) echo $(( ${value%s} )) ;;
+                *) echo "$value" ;;
+              esac
+            }
+
+            require_binary() {
+              if ! command -v "$1" >/dev/null 2>&1; then
+                echo "missing required binary: $1"
+                exit 1
+              fi
+            }
+
+            require_binary kubectl
+
+            resolve_single() {
+              label_selector="$1"
+              resource="$2"
+              name="$(kubectl -n "${CLUSTER_NAMESPACE}" get "${resource}" -l "${label_selector}" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)"
+              count="$(kubectl -n "${CLUSTER_NAMESPACE}" get "${resource}" -l "${label_selector}" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null | wc -w | tr -d ' ')"
+              if [ "$count" != "1" ]; then
+                echo "expected exactly one ${resource} with selector ${label_selector}, found ${count}"
+                kubectl -n "${CLUSTER_NAMESPACE}" get "${resource}" -l "${label_selector}" -o name || true
+                exit 1
+              fi
+              echo "$name"
+            }
+
+            TCP_NAME="$(resolve_single "cluster.x-k8s.io/cluster-name=${CLUSTER_NAME}" taloscontrolplane)"
+            MD_NAME="$(resolve_single "cluster.x-k8s.io/cluster-name=${CLUSTER_NAME}" machinedeployment)"
+
+            TALOS_SECRET_NAMES="$(kubectl -n "${CLUSTER_NAMESPACE}" get secret -l "cluster.x-k8s.io/cluster-name=${CLUSTER_NAME}" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' | grep -- '-talosconfig$' || true)"
+            TALOS_SECRET_COUNT="$(printf '%s' "$TALOS_SECRET_NAMES" | wc -w | tr -d ' ')"
+            if [ "$TALOS_SECRET_COUNT" != "1" ]; then
+              echo "expected exactly one talosconfig secret matching *-talosconfig for ${CLUSTER_NAMESPACE}/${CLUSTER_NAME}, found ${TALOS_SECRET_COUNT}"
+              printf '%s\n' "$TALOS_SECRET_NAMES"
+              exit 1
+            fi
+            TALOS_SECRET_NAME="$TALOS_SECRET_NAMES"
+
+            TALOSCONFIG_FILE="$(mktemp)"
+            trap 'rm -f "${TALOSCONFIG_FILE}"' EXIT
+            kubectl -n "${CLUSTER_NAMESPACE}" get secret "${TALOS_SECRET_NAME}" -o jsonpath='{.data.talosconfig}' | base64 -d > "${TALOSCONFIG_FILE}"
+
+            TALOS_VERSION="$(kubectl -n "${CLUSTER_NAMESPACE}" get taloscontrolplane "${TCP_NAME}" -o jsonpath='{.spec.controlPlaneConfig.controlplane.talosVersion}')"
+            if [ -z "${TALOS_VERSION}" ]; then
+              echo "failed to determine Talos version from TalosControlPlane"
+              exit 1
+            fi
+
+            TALOSCTL_BIN="/tmp/talosctl"
+            if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
+              echo "curl or wget required to download talosctl"
+              exit 1
+            fi
+            TALOSCTL_URL="https://github.com/siderolabs/talos/releases/download/${TALOS_VERSION}/talosctl-linux-amd64"
+            if command -v curl >/dev/null 2>&1; then
+              curl -fsSL "${TALOSCTL_URL}" -o "${TALOSCTL_BIN}"
+            else
+              wget -O "${TALOSCTL_BIN}" "${TALOSCTL_URL}"
+            fi
+            chmod +x "${TALOSCTL_BIN}"
+
+            # Safety checks
+            TCP_MAX_SURGE="$(kubectl -n "${CLUSTER_NAMESPACE}" get taloscontrolplane "${TCP_NAME}" -o jsonpath='{.spec.rolloutStrategy.rollingUpdate.maxSurge}')"
+            if [ "${TCP_MAX_SURGE}" != "0" ]; then
+              echo "unsafe TalosControlPlane maxSurge=${TCP_MAX_SURGE}; expected 0"
+              exit 1
+            fi
+
+            MD_MAX_SURGE="$(kubectl -n "${CLUSTER_NAMESPACE}" get machinedeployment "${MD_NAME}" -o jsonpath='{.spec.strategy.rollingUpdate.maxSurge}')"
+            MD_MAX_UNAVAILABLE="$(kubectl -n "${CLUSTER_NAMESPACE}" get machinedeployment "${MD_NAME}" -o jsonpath='{.spec.strategy.rollingUpdate.maxUnavailable}')"
+            if [ "${MD_MAX_SURGE}" != "0" ] || [ "${MD_MAX_UNAVAILABLE}" != "1" ]; then
+              echo "unsafe MachineDeployment strategy maxSurge=${MD_MAX_SURGE} maxUnavailable=${MD_MAX_UNAVAILABLE}; expected 0/1"
+              exit 1
+            fi
+
+            if [ "${SCOPE}" = "controlplane" ]; then
+              TIMEOUT_RAW="{{workflow.parameters.controlPlaneTimeout}}"
+              RESOURCE_KIND="taloscontrolplane"
+              RESOURCE_NAME="${TCP_NAME}"
+              MACHINE_SELECTOR="cluster.x-k8s.io/cluster-name=${CLUSTER_NAME},cluster.x-k8s.io/control-plane"
+              USE_SPEC_UPTODATE="true"
+            else
+              TIMEOUT_RAW="{{workflow.parameters.workersTimeout}}"
+              RESOURCE_KIND="machinedeployment"
+              RESOURCE_NAME="${MD_NAME}"
+              MACHINE_SELECTOR="cluster.x-k8s.io/cluster-name=${CLUSTER_NAME},cluster.x-k8s.io/deployment-name=${MD_NAME}"
+              USE_SPEC_UPTODATE="false"
+            fi
+
+            TIMEOUT_SECONDS="$(duration_to_seconds "${TIMEOUT_RAW}")"
+            START_TIME="$(date +%s)"
+            REMEDIATIONS=0
+
+            find_unhealthy_machine() {
+              kubectl -n "${CLUSTER_NAMESPACE}" get machines -l "${MACHINE_SELECTOR}" \
+                -o jsonpath='{range .items[*]}{.metadata.name}{"|"}{.status.phase}{"|"}{.status.conditions[?(@.type=="Ready")].status}{"|"}{.status.conditions[?(@.type=="NodeHealthy")].status}{"\n"}{end}' \
+                | while IFS='|' read -r name phase ready nodehealthy; do
+                    if [ -z "$name" ]; then
+                      continue
+                    fi
+                    if [ "$phase" = "Failed" ] || [ "$ready" != "True" ] || [ "$nodehealthy" = "False" ]; then
+                      echo "$name"
+                      break
+                    fi
+                  done
+            }
+
+            machine_node_ip() {
+              machine="$1"
+              ip="$(kubectl -n "${CLUSTER_NAMESPACE}" get machine "${machine}" -o jsonpath='{.status.addresses[?(@.type=="InternalIP")].address}' 2>/dev/null || true)"
+              if [ -z "$ip" ]; then
+                ip="$(kubectl -n "${CLUSTER_NAMESPACE}" get machine "${machine}" -o jsonpath='{.status.addresses[0].address}' 2>/dev/null || true)"
+              fi
+              echo "$ip"
+            }
+
+            wait_rollout() {
+              while true; do
+                GEN="$(kubectl -n "${CLUSTER_NAMESPACE}" get "${RESOURCE_KIND}" "${RESOURCE_NAME}" -o jsonpath='{.metadata.generation}')"
+                OBS="$(kubectl -n "${CLUSTER_NAMESPACE}" get "${RESOURCE_KIND}" "${RESOURCE_NAME}" -o jsonpath='{.status.observedGeneration}' 2>/dev/null || echo "0")"
+                REPLICAS="$(kubectl -n "${CLUSTER_NAMESPACE}" get "${RESOURCE_KIND}" "${RESOURCE_NAME}" -o jsonpath='{.spec.replicas}' 2>/dev/null || echo "0")"
+                READY="$(kubectl -n "${CLUSTER_NAMESPACE}" get "${RESOURCE_KIND}" "${RESOURCE_NAME}" -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "0")"
+                if [ "${USE_SPEC_UPTODATE}" = "true" ]; then
+                  UPDATED="${READY}"
+                  SPEC_UPTODATE="$(kubectl -n "${CLUSTER_NAMESPACE}" get "${RESOURCE_KIND}" "${RESOURCE_NAME}" -o jsonpath='{.status.conditions[?(@.type=="MachinesSpecUpToDate")].status}' 2>/dev/null || echo "")"
+                else
+                  UPDATED="$(kubectl -n "${CLUSTER_NAMESPACE}" get "${RESOURCE_KIND}" "${RESOURCE_NAME}" -o jsonpath='{.status.updatedReplicas}' 2>/dev/null || echo "0")"
+                  SPEC_UPTODATE="True"
+                fi
+
+                REPLICAS=${REPLICAS:-0}
+                UPDATED=${UPDATED:-0}
+                READY=${READY:-0}
+                OBS=${OBS:-0}
+
+                echo "${RESOURCE_KIND}/${RESOURCE_NAME}: gen=${GEN} observed=${OBS} replicas=${REPLICAS} updated=${UPDATED} ready=${READY} specUpToDate=${SPEC_UPTODATE}"
+
+                if [ "$UPDATED" = "$REPLICAS" ] && [ "$READY" = "$REPLICAS" ] && [ "$OBS" = "$GEN" ] && [ "$SPEC_UPTODATE" = "True" ]; then
+                  echo "${RESOURCE_KIND}/${RESOURCE_NAME} rollout complete"
+                  break
+                fi
+
+                NOW="$(date +%s)"
+                if [ $((NOW - START_TIME)) -ge "$TIMEOUT_SECONDS" ]; then
+                  if [ "$REMEDIATIONS" -ge "$MAX_REMEDIATIONS" ]; then
+                    echo "timeout reached and max remediations exhausted"
+                    exit 1
+                  fi
+
+                  TARGET_MACHINE="$(find_unhealthy_machine)"
+                  if [ -z "$TARGET_MACHINE" ]; then
+                    echo "no unhealthy machine found for remediation"
+                    exit 1
+                  fi
+
+                  echo "remediating machine ${TARGET_MACHINE}"
+                  NODE_IP="$(machine_node_ip "${TARGET_MACHINE}")"
+                  if [ -z "$NODE_IP" ]; then
+                    echo "failed to determine node IP for ${TARGET_MACHINE}"
+                    exit 1
+                  fi
+
+                  kubectl -n "${CLUSTER_NAMESPACE}" delete machine "${TARGET_MACHINE}" --wait=false
+
+                  echo "rebooting node ${NODE_IP} via talosctl"
+                  if ! output=$(${TALOSCTL_BIN} --talosconfig "${TALOSCONFIG_FILE}" -n "${NODE_IP}" reboot --mode "${REBOOT_MODE}" --wait=false 2>&1); then
+                    if echo "${output}" | grep -qi "certificate signed by unknown authority\|maintenance mode\|API is not implemented"; then
+                      echo "node ${NODE_IP} in maintenance mode; manual action required"
+                      exit 1
+                    fi
+                    echo "talosctl reboot failed: ${output}"
+                    exit 1
+                  fi
+
+                  REMEDIATIONS=$((REMEDIATIONS + 1))
+                  START_TIME="$(date +%s)"
+                fi
+
+                sleep "${POLL_INTERVAL}"
+              done
+            }
+
+            wait_rollout
