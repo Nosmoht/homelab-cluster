@@ -8,6 +8,8 @@ spec:
       volumes:
         - name: custom-tools
           emptyDir: {}
+        - name: kustomize-plugin
+          emptyDir: {}
         - name: sops-age
           secret:
             secretName: sops-age
@@ -34,6 +36,9 @@ spec:
               wget -qO- "${url}" | tar -xz -C /custom-tools ksops
               cp "$(command -v sops)" /custom-tools/sops
               chmod +x /custom-tools/ksops /custom-tools/sops
+              plugin_dir="/kustomize/plugin/viaduct.ai/v1/ksops"
+              mkdir -p "${plugin_dir}"
+              cp /custom-tools/ksops "${plugin_dir}/ksops"
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -46,11 +51,15 @@ spec:
           volumeMounts:
             - name: custom-tools
               mountPath: /custom-tools
+            - name: kustomize-plugin
+              mountPath: /kustomize/plugin
       containers:
         - name: argocd-repo-server
           env:
             - name: SOPS_AGE_KEY_FILE
               value: /sops-age/keys.txt
+            - name: KUSTOMIZE_PLUGIN_HOME
+              value: /home/argocd/.config/kustomize/plugin
           volumeMounts:
             - name: custom-tools
               mountPath: /usr/local/bin/ksops
@@ -58,6 +67,8 @@ spec:
             - name: custom-tools
               mountPath: /usr/local/bin/sops
               subPath: sops
+            - name: kustomize-plugin
+              mountPath: /home/argocd/.config/kustomize/plugin
             - name: sops-age
               mountPath: /sops-age
               readOnly: true
