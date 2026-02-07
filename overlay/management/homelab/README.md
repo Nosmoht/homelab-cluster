@@ -21,6 +21,9 @@ Pinned versions in these manifests:
 - Schematic ID: `e048aaf4461ff9f9576c9a42f760f2fef566559bd4933f322853ac291e46f238`
 - Installer image:
   - `factory.talos.dev/installer/e048aaf4461ff9f9576c9a42f760f2fef566559bd4933f322853ac291e46f238:v1.12.2`
+- PXE boot assets:
+  - `https://factory.talos.dev/image/e048aaf4461ff9f9576c9a42f760f2fef566559bd4933f322853ac291e46f238/v1.12.2/kernel-amd64`
+  - `https://factory.talos.dev/image/e048aaf4461ff9f9576c9a42f760f2fef566559bd4933f322853ac291e46f238/v1.12.2/initramfs-amd64.xz`
 - System extensions:
   - `siderolabs/drbd`
 
