@@ -7,6 +7,8 @@ resources:
   - sso-rbac.yaml
   - kube-bench-rbac.yaml
   - kube-bench-workflowtemplate.yaml
+  - capi-rollout-rbac.yaml
+  - capi-rollout-workflowtemplate.yaml
 patches:
   - path: workflow-controller-configmap-sso-patch.yaml
     target:

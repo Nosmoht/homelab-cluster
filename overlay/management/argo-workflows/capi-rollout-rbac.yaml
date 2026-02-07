@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: capi-rollout-runner
+  namespace: argo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: capi-rollout-runner
+rules:
+  - apiGroups: ["cluster.x-k8s.io"]
+    resources: ["clusters", "machinedeployments", "machines"]
+    verbs: ["get", "list", "watch", "delete"]
+  - apiGroups: ["controlplane.cluster.x-k8s.io"]
+    resources: ["taloscontrolplanes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["argoproj.io"]
+    resources: ["workflowtaskresults"]
+    verbs: ["create", "get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: capi-rollout-runner
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: capi-rollout-runner
+subjects:
+  - kind: ServiceAccount
+    name: capi-rollout-runner
+    namespace: argo
