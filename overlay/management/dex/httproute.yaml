@@ -5,7 +5,9 @@ metadata:
   namespace: dex
 spec:
   parentRefs:
-    - name: homelab-gateway
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: homelab-gateway
       namespace: gateway
   hostnames:
     - dex.homelab.ntbc.io
@@ -15,5 +17,8 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: dex
+        - group: ""
+          kind: Service
+          name: dex
           port: 5556
+          weight: 1

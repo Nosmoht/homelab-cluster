@@ -5,7 +5,9 @@ metadata:
   namespace: argo
 spec:
   parentRefs:
-    - name: homelab-gateway
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: homelab-gateway
       namespace: gateway
   hostnames:
     - argoworkflows.homelab.ntbc.io
@@ -15,5 +17,8 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: argo-server
+        - group: ""
+          kind: Service
+          name: argo-server
           port: 2746
+          weight: 1
