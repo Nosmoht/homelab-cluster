@@ -12,3 +12,4 @@ spec:
     - argocd.homelab.ntbc.io
     - argoworkflows.homelab.ntbc.io
     - dex.homelab.ntbc.io
+    - grafana.homelab.ntbc.io

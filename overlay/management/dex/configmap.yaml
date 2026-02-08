@@ -35,3 +35,8 @@ data:
         redirectURIs:
           - https://argoworkflows.homelab.ntbc.io/oauth2/callback
         secretEnv: ARGO_WORKFLOWS_OIDC_CLIENT_SECRET
+      - id: grafana
+        name: Grafana
+        redirectURIs:
+          - https://grafana.homelab.ntbc.io/login/generic_oauth
+        secretEnv: GRAFANA_OIDC_CLIENT_SECRET

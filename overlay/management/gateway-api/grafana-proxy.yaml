@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: homelab-grafana
+  namespace: gateway
+  labels:
+    app: homelab-grafana
+spec:
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+  selector: {}
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: homelab-grafana
+  namespace: gateway
+subsets:
+  - addresses:
+      # TODO: Align with the homelab MetalLB Grafana IP.
+      - ip: 10.0.0.70
+    ports:
+      - name: http
+        port: 3000

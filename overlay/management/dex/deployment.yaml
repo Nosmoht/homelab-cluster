@@ -58,6 +58,11 @@ spec:
                 secretKeyRef:
                   name: dex-oidc-secrets
                   key: argo-workflows-oidc-client-secret
+            - name: GRAFANA_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: dex-grafana-oidc-secret
+                  key: grafana-oidc-client-secret
           volumeMounts:
             - name: config
               mountPath: /etc/dex/cfg
