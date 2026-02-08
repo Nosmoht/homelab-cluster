@@ -4,3 +4,6 @@ metadata:
   name: argocd-cmd-params-cm
 data:
   server.insecure: "true"
+  controller.status.processors: "1"
+  controller.operation.processors: "1"
+  reposerver.parallelism.limit: "1"
