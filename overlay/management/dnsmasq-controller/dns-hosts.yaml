@@ -37,6 +37,16 @@ spec:
       hostnames:
         - node-06
         - node-06.homelab.ntbc.io
+    - ip: 10.0.0.2
+      hostnames:
+        - argocd
+        - argocd.homelab.ntbc.io
+        - argoworkflows
+        - argoworkflows.homelab.ntbc.io
+        - dex
+        - dex.homelab.ntbc.io
+        - grafana
+        - grafana.homelab.ntbc.io
     - ip: 10.0.0.254
       hostnames:
         - switch
