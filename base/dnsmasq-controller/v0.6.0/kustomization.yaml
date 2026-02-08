@@ -1,5 +1,12 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - https://github.com/aenix-io/dnsmasq-controller/config/crd/bases?ref=v0.6.0
-  - https://github.com/aenix-io/dnsmasq-controller/config/rbac?ref=v0.6.0
+  - crd/dnsmasq.kvaps.cf_dhcphosts.yaml
+  - crd/dnsmasq.kvaps.cf_dhcpoptions.yaml
+  - crd/dnsmasq.kvaps.cf_dnshosts.yaml
+  - crd/dnsmasq.kvaps.cf_dnsmasqoptions.yaml
+  - rbac/leader_election_role_binding.yaml
+  - rbac/leader_election_role.yaml
+  - rbac/role_binding.yaml
+  - rbac/role.yaml
+  - rbac/service_account.yaml

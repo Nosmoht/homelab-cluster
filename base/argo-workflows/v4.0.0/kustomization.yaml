@@ -3,4 +3,4 @@ kind: Kustomization
 namespace: argo
 resources:
   - namespace.yaml
-  - https://github.com/argoproj/argo-workflows/releases/download/v4.0.0/install.yaml
+  - install.yaml
