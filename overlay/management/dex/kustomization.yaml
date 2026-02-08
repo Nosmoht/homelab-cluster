@@ -12,3 +12,4 @@ resources:
 
 generators:
   - dex-oidc-secrets-generator.yaml
+  - dex-grafana-oidc-secret-generator.yaml

@@ -7,3 +7,5 @@ resources:
   - gateway.yaml
   - certificate.yaml
   - referencegrant.yaml
+  - grafana-proxy.yaml
+  - grafana-httproute.yaml
