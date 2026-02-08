@@ -30,6 +30,10 @@ patches:
     target:
       kind: Deployment
       name: argocd-repo-server
+  - path: argocd-repo-server-copyutil-patch.yaml
+    target:
+      kind: Deployment
+      name: argocd-repo-server
 
 generators:
   - argocd-secret-sso-generator.yaml
