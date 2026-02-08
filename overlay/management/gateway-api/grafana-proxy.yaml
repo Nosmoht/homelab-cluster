@@ -12,15 +12,19 @@ spec:
       targetPort: 3000
   selector: {}
 ---
-apiVersion: v1
-kind: Endpoints
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
 metadata:
-  name: homelab-grafana
+  name: homelab-grafana-1
   namespace: gateway
-subsets:
+  labels:
+    kubernetes.io/service-name: homelab-grafana
+addressType: IPv4
+endpoints:
   - addresses:
       # TODO: Align with the homelab MetalLB Grafana IP.
-      - ip: 10.0.0.70
-    ports:
-      - name: http
-        port: 3000
+      - 10.0.0.70
+ports:
+  - name: http
+    port: 3000
+    protocol: TCP
