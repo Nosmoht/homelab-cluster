@@ -15,7 +15,7 @@ spec:
 apiVersion: discovery.k8s.io/v1
 kind: EndpointSlice
 metadata:
-  name: homelab-grafana-1
+  name: homelab-grafana
   namespace: gateway
   labels:
     kubernetes.io/service-name: homelab-grafana
