@@ -23,7 +23,7 @@ spec:
       project: workload-fleet
       source:
         repoURL: https://github.com/Nosmoht/homelab-apps.git
-        targetRevision: HEAD
+        targetRevision: main
         path: apps
       destination:
         server: '{{.server}}'

@@ -26,7 +26,7 @@ spec:
   source:
     path: overlay/management/metallb-operator
     repoURL: git@github.com:Nosmoht/homelab-cluster.git
-    targetRevision: HEAD
+    targetRevision: main
   syncPolicy:
     automated:
       prune: true
