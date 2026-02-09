@@ -25,7 +25,8 @@ after Day0 bootstrap and is designed for GitOps with Argo CD.
 - DNS:
   - Public: `ntbc.io`, wildcard `*.homelab.ntbc.io` -> public Fritzbox IP
   - Internal: `lan.ntbc.io` authoritative via dnsmasq on `10.0.0.1`
-  - `homelab.ntbc.io` is forwarded internally to upstream DNS
+  - `homelab.ntbc.io` is forwarded internally to upstream DNS (no internal
+    overrides for nodes/infra)
 
 ## Day0 vs Day2
 
