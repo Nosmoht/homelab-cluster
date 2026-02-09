@@ -9,35 +9,58 @@ spec:
       hostnames:
         - sidero
         - sidero.homelab.ntbc.io
+        - sidero.lan.ntbc.io
     - ip: 10.0.0.10
       hostnames:
         - k8s-api
         - k8s-api.homelab.ntbc.io
+        - k8s-api.lan.ntbc.io
     - ip: 10.0.0.11
       hostnames:
         - node-01
         - node-01.homelab.ntbc.io
+        - node-01.lan.ntbc.io
     - ip: 10.0.0.12
       hostnames:
         - node-02
         - node-02.homelab.ntbc.io
+        - node-02.lan.ntbc.io
     - ip: 10.0.0.13
       hostnames:
         - node-03
         - node-03.homelab.ntbc.io
+        - node-03.lan.ntbc.io
     - ip: 10.0.0.14
       hostnames:
         - node-04
         - node-04.homelab.ntbc.io
+        - node-04.lan.ntbc.io
     - ip: 10.0.0.15
       hostnames:
         - node-05
         - node-05.homelab.ntbc.io
+        - node-05.lan.ntbc.io
     - ip: 10.0.0.16
       hostnames:
         - node-06
         - node-06.homelab.ntbc.io
+        - node-06.lan.ntbc.io
+    - ip: 10.0.0.2
+      hostnames:
+        - argocd
+        - argocd.homelab.ntbc.io
+        - argocd.lan.ntbc.io
+        - argoworkflows
+        - argoworkflows.homelab.ntbc.io
+        - argoworkflows.lan.ntbc.io
+        - dex
+        - dex.homelab.ntbc.io
+        - dex.lan.ntbc.io
+        - grafana
+        - grafana.homelab.ntbc.io
+        - grafana.lan.ntbc.io
     - ip: 10.0.0.254
       hostnames:
         - switch
         - switch.homelab.ntbc.io
+        - switch.lan.ntbc.io
