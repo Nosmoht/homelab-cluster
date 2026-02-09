@@ -10,9 +10,11 @@ spec:
     - key: server
       values: [192.168.2.1]
     - key: domain
-      values: [homelab.ntbc.io]
+      values: [lan.ntbc.io]
     - key: local
-      values: ['/homelab.ntbc.io/']
+      values: ['/lan.ntbc.io/']
+    - key: server
+      values: ['/homelab.ntbc.io/192.168.2.1']
     - key: dhcp-range
       values: [10.0.0.0, static, infinite]
     - key: dhcp-range

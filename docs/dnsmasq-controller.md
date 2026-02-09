@@ -10,12 +10,14 @@ Current behavior:
   and loopback `lo`.
 - Upstream DNS forwarding uses Fritzbox (`192.168.2.1`) and ignores
   `/etc/resolv.conf` (`--no-resolv`).
-- Local zone is authoritative for `homelab.ntbc.io` (`domain` + `local`).
+- Local zone is authoritative for `lan.ntbc.io` (`domain` + `local`).
+- `homelab.ntbc.io` is forwarded to upstream DNS (public wildcard zone).
 - DNS safety/perf options are enabled (`domain-needed`, `stop-dns-rebind`,
   `cache-size=5000`, `local-ttl=60`, `neg-ttl=60`).
 - DHCP runs in authoritative mode and provides:
   - static leases (`dhcp-range=10.0.0.0,static,infinite`)
   - small temporary dynamic pool (`10.0.0.240-10.0.0.249`, `12h`)
-- Static DHCP/DNS host entries are present for `node-01` to `node-06`.
+- Static DHCP/DNS host entries are present for `node-01` to `node-06`, plus
+  internal service hostnames on `lan.ntbc.io`.
 - The dnsmasq DaemonSet is pinned to the gateway node via
   `kubernetes.io/hostname=sidero`.

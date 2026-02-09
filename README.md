@@ -23,7 +23,9 @@ after Day0 bootstrap and is designed for GitOps with Argo CD.
 - Routing:
   - Fritzbox routes `10.0.0.0/8` via `192.168.2.60`
 - DNS:
-  - Zone `ntbc.io`, wildcard `*.homelab.ntbc.io` -> public Fritzbox IP
+  - Public: `ntbc.io`, wildcard `*.homelab.ntbc.io` -> public Fritzbox IP
+  - Internal: `lan.ntbc.io` authoritative via dnsmasq on `10.0.0.1`
+  - `homelab.ntbc.io` is forwarded internally to upstream DNS
 
 ## Day0 vs Day2
 
