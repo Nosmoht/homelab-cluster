@@ -4,7 +4,7 @@ metadata:
   name: homelab-workers
 spec:
   clusterName: homelab
-  replicas: 2
+  replicas: 3
   strategy:
     rollingUpdate:
       maxSurge: 0
