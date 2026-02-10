@@ -47,3 +47,9 @@ spec:
         system:
           family: ThinkCentre M710q
           manufacturer: LENOVO
+      - compute:
+          processors:
+            - productName: Intel(R) Core(TM) i7-7700T CPU @ 2.90GHz
+        system:
+          family: ThinkCentre M910q
+          manufacturer: LENOVO
