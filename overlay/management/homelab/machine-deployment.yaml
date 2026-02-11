@@ -18,7 +18,7 @@ spec:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
           kind: TalosConfigTemplate
-          name: homelab-workers-v1-12-2-1
+          name: homelab-workers-v1-12-3-1
           namespace: default
       clusterName: homelab
       infrastructureRef:
