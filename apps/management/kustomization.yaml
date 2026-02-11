@@ -7,6 +7,7 @@ resources:
   - argocd.yaml
   - argo-workflows.yaml
   - argo-events.yaml
+  - capi-rollout.yaml
   - capi-argocd-bridge.yaml
   - cert-manager.yaml
   - envoy-gateway.yaml
