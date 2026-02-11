@@ -16,6 +16,15 @@ Pinned versions in these manifests:
 - Cilium is configured to talk to the API server via kubePrism (`localhost:7445`).
 - Talos explicitly enables kubePrism to ensure Cilium can reach the API during bootstrap.
 
+## Etcd metrics for monitoring
+
+- Talos control-plane nodes expose etcd metrics via
+  `cluster.etcd.extraArgs.listen-metrics-urls=http://0.0.0.0:2381`.
+- `kube-prometheus-stack` scrapes the control-plane node IPs on port `2381`
+  through `kubeEtcd.endpoints`.
+- Changes to the Talos control-plane config must roll out via CAPI/Talos
+  Provider (not `talosctl upgrade`).
+
 ## Talos image factory schematic
 
 - Schematic ID: `1a1a8fdf48ac2c0647ad26a55b1a476f1a1d8862a68a758ce45f0806eefa61e1`
