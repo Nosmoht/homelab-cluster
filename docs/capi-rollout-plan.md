@@ -1,58 +1,87 @@
-# CAPI Rollout Orchestrator - No-Spare Hardening
+# CAPI Rollout Orchestrator Hardening (No-Spare + LINSTOR Safety)
 
 ## Summary
-This runbook hardens the CAPI rollout orchestration for a no-spare-node topology.
-The workflow enforces strict one-by-one node progress and prevents concurrent
-rollout runs for the same cluster.
+This runbook defines the safety model for rollout orchestration in a no-spare
+topology:
 
-## Scope and defaults
-- Workflow remains orchestrate-only (no patching of CAPI resources).
-- Rollout order remains fixed: control plane, then workers.
-- Automatic trigger is TCP-only.
-- Default no-spare guard: `maxConcurrentUnavailable=1`.
-- CAPI rollout strategy requirements remain mandatory:
-  - TalosControlPlane: `maxSurge=0`
-  - MachineDeployment: `maxSurge=0`, `maxUnavailable=1`
+- keep strict one-node-at-a-time rollout behavior,
+- serialize cluster rollouts with an Argo mutex,
+- enforce a fail-closed LINSTOR evacuation and restore flow before any machine
+  remediation (`delete machine` + `talosctl reboot`).
+
+`source.hostDevices` remains intentionally enabled in the LINSTOR app because it
+is required for automatic PV/VG/LVM provisioning.
+
+## Core guarantees
+- Rollout order stays fixed: control plane, then workers.
+- Automatic trigger stays TCP-only.
+- No more than one unavailable/deleting node per scope.
+- No machine remediation starts while LINSTOR reports faulty resources.
+- No machine remediation starts before the target node is evacuated from
+  `lvm-thick`.
+- After reboot, LINSTOR node restore and cluster settle checks must pass before
+  proceeding.
 
 ## WorkflowTemplate behavior
 File: `overlay/management/argo-workflows/capi-rollout-workflowtemplate.yaml`
 
-- Added parameter:
-  - `maxConcurrentUnavailable` (default `"1"`).
-- Added serialization:
-  - `spec.synchronization.mutex` keyed by cluster namespace/name.
-- Added runtime guard in polling loop:
-  - count Machines with `Ready != True` for current scope.
-  - count Machines with `metadata.deletionTimestamp` set for current scope.
-  - fail fast when either value exceeds `maxConcurrentUnavailable`.
-- Existing safety checks are still enforced before rollout wait/remediation starts.
+### Existing safety checks (unchanged)
+- TalosControlPlane requires `maxSurge=0`.
+- MachineDeployment requires `maxSurge=0`, `maxUnavailable=1`.
+- Runtime guard enforces `maxConcurrentUnavailable`.
+- Workflow mutex key: `capi-rollout-<namespace>-<cluster>`.
+
+### New LINSTOR parameters
+- `linstorGuardEnabled` (default `"true"`).
+- `linstorNamespace` (default `piraeus-datastore`).
+- `linstorControllerSelector` (default `app.kubernetes.io/component=linstor-controller`).
+- `linstorStoragePool` (default `lvm-thick`).
+- `linstorEvacuationTimeout` (default `45m`).
+- `linstorSettleTimeout` (default `30m`).
+
+### Remediation flow (timeout path)
+1. Select unhealthy machine as before.
+2. Resolve node name and node IP.
+3. If `linstorGuardEnabled=true`:
+   - assert global LINSTOR health (`linstor resource list --faulty` is empty),
+   - evacuate target node (`linstor node evacuate <node>`),
+   - wait until no `lvm-thick` resource rows remain on target node.
+4. Delete machine.
+5. Reboot node via Talos (`talosctl reboot --mode=<...> --wait=true --timeout <...>`).
+6. If `linstorGuardEnabled=true`:
+   - restore node (`linstor node restore <node>`),
+   - wait until LINSTOR is settled (no active `Connecting`/`Sync`/`DELETING`
+     states),
+   - re-check global faulty resources.
+7. Continue polling rollout progress.
+
+All LINSTOR failures are fail-fast and stop remediation before destructive
+actions.
 
 ## Trigger model
 Files:
 - `overlay/management/capi-rollout/event-source-capi-rollout.yaml`
 - `overlay/management/capi-rollout/sensor-capi-rollout.yaml`
 
-- `md-upsert` event source and trigger are removed.
-- Only `tcp-upsert` events submit `capi-rollout-orchestrator`.
-- Manual submit remains supported for worker-only or ad-hoc rollouts.
+- `md-upsert` is not an automatic trigger.
+- only `tcp-upsert` submits `capi-rollout-orchestrator`.
+- manual submit remains available for ad-hoc worker rollouts.
 
-## Argo CD apply order for single-commit TCP+MD changes
+## Single-commit TCP+MD ordering
 Files:
 - `overlay/management/homelab/talos-config-template.yaml`
 - `overlay/management/homelab/machine-deployment.yaml`
 - `overlay/management/homelab/talos-control-plane.yaml`
 
-Required sync waves:
-- TalosConfigTemplate: `argocd.argoproj.io/sync-wave: "-2"`
-- MachineDeployment: `argocd.argoproj.io/sync-wave: "-1"`
-- TalosControlPlane: `argocd.argoproj.io/sync-wave: "0"`
+Required Argo CD sync waves:
+- TalosConfigTemplate: `-2`
+- MachineDeployment: `-1`
+- TalosControlPlane: `0`
 
-This guarantees that in a combined TCP+MD commit, MD/TalosConfig changes are
-already applied when the TCP update event triggers the workflow.
+This guarantees that combined TCP+MD changes are applied in correct order before
+the TCP-triggered rollout starts.
 
 ## Validation
-Run:
-
 ```bash
 kustomize build overlay/management/homelab
 kustomize build overlay/management/capi-rollout
@@ -61,13 +90,20 @@ kustomize build overlay/management/argo-workflows
 
 Note: the argo-workflows overlay uses ksops; local build requires ksops support.
 
-## Operational expectations
-- Single combined TCP+MD commit:
-  - exactly one active workflow per cluster (mutex).
-  - no more than one unavailable/deleting node at any time per scope.
-  - rollout sequence remains control plane then workers.
-- Trigger storms (multiple TCP updates):
-  - serialized execution; no concurrent cluster rollout runs.
-- MD-only commit:
-  - no automatic rollout trigger.
-  - trigger manually via workflow submission when needed.
+## Operational checks
+Use local workload credentials for manual checks:
+
+```bash
+export KUBECONFIG=/Users/thomaskrahn/workspace/sidero-apps/kubeconfig-homelab
+export TALOSCONFIG=/Users/thomaskrahn/workspace/sidero-apps/talosconfig-homelab
+```
+
+## Expected scenarios
+- Happy path:
+  evacuation succeeds, remediation completes, restore settles, rollout resumes.
+- Evacuation blocked:
+  workflow aborts before machine delete/reboot.
+- LINSTOR faulty:
+  workflow aborts before machine delete/reboot.
+- Restore/settle timeout:
+  workflow aborts after reboot with explicit failure.
