@@ -24,6 +24,7 @@ endpoints:
   - addresses:
       # TODO: Align with the homelab MetalLB Grafana IP.
       - 10.0.0.70
+    conditions: {}
 ports:
   - name: http
     port: 80

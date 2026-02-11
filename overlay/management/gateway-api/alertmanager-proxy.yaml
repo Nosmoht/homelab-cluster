@@ -23,6 +23,7 @@ addressType: IPv4
 endpoints:
   - addresses:
       - 10.0.0.72
+    conditions: {}
 ports:
   - name: http
     port: 4180
