@@ -22,21 +22,6 @@ spec:
                 path: body.metadata.generation
               - name: observed
                 path: body.status.observedGeneration
-    - name: md-upsert
-      eventSourceName: capi-rollout
-      eventName: md-upsert
-      filters:
-        exprs:
-          - expr: clusterName != ""
-            fields:
-              - name: clusterName
-                path: body.metadata.labels.cluster\\.x-k8s\\.io/cluster-name
-          - expr: generation != observed
-            fields:
-              - name: generation
-                path: body.metadata.generation
-              - name: observed
-                path: body.status.observedGeneration
   triggers:
     - template:
         name: trigger-rollout-tcp
@@ -69,38 +54,5 @@ spec:
           dest: spec.arguments.parameters.0.value
         - src:
             dependencyName: tcp-upsert
-            dataKey: body.metadata.namespace
-          dest: spec.arguments.parameters.1.value
-    - template:
-        name: trigger-rollout-md
-        conditions: "md-upsert"
-        argoWorkflow:
-          group: argoproj.io
-          version: v1alpha1
-          resource: workflows
-          operation: submit
-          source:
-            resource:
-              apiVersion: argoproj.io/v1alpha1
-              kind: Workflow
-              metadata:
-                generateName: capi-rollout-
-                namespace: argo
-              spec:
-                workflowTemplateRef:
-                  name: capi-rollout-orchestrator
-                arguments:
-                  parameters:
-                    - name: clusterName
-                      value: placeholder
-                    - name: clusterNamespace
-                      value: default
-      parameters:
-        - src:
-            dependencyName: md-upsert
-            dataKey: body.metadata.labels.cluster\\.x-k8s\\.io/cluster-name
-          dest: spec.arguments.parameters.0.value
-        - src:
-            dependencyName: md-upsert
             dataKey: body.metadata.namespace
           dest: spec.arguments.parameters.1.value

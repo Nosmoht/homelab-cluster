@@ -1,73 +1,73 @@
-# CAPI Rollout Orchestrator Workflow Plan (Option A)
+# CAPI Rollout Orchestrator - No-Spare Hardening
 
 ## Summary
-This plan defines an Argo Workflows **WorkflowTemplate** to orchestrate safe CAPI rolling replacements for a workload cluster (control plane first, then workers). The workflow does **not** patch CAPI objects. It monitors status and auto‑remediates stalled rollouts by deleting unhealthy Machines and rebooting their nodes via Talos. If a node is in Maintenance Mode, the workflow stops and requests manual intervention (no BMC).
+This runbook hardens the CAPI rollout orchestration for a no-spare-node topology.
+The workflow enforces strict one-by-one node progress and prevents concurrent
+rollout runs for the same cluster.
 
-## Goals / Success Criteria
-- Manual submit and Argo Events trigger supported.
-- Single input: `clusterName` (plus optional `clusterNamespace`, default `default`).
-- Safe, sequential rollout (control plane → workers).
-- Auto‑remediate on stall (delete Machine + reboot node).
-- Fail fast if a node is in Maintenance Mode.
+## Scope and defaults
+- Workflow remains orchestrate-only (no patching of CAPI resources).
+- Rollout order remains fixed: control plane, then workers.
+- Automatic trigger is TCP-only.
+- Default no-spare guard: `maxConcurrentUnavailable=1`.
+- CAPI rollout strategy requirements remain mandatory:
+  - TalosControlPlane: `maxSurge=0`
+  - MachineDeployment: `maxSurge=0`, `maxUnavailable=1`
 
-## Decisions & Constraints
-- **Mode:** Orchestrate‑only (no CAPI patching).
-- **Scope:** Control plane + workers.
-- **Failure policy:** Auto‑remediate.
-- **Triggering:** Manual + Argo Events.
-- **Target selection:** by `cluster.x-k8s.io/cluster-name` label.
-- **Talosconfig resolution:** label‑based only, no override parameters.
-- **Reboot:** only during remediation; fails if Maintenance detected.
+## WorkflowTemplate behavior
+File: `overlay/management/argo-workflows/capi-rollout-workflowtemplate.yaml`
 
-## Implementation Outline
+- Added parameter:
+  - `maxConcurrentUnavailable` (default `"1"`).
+- Added serialization:
+  - `spec.synchronization.mutex` keyed by cluster namespace/name.
+- Added runtime guard in polling loop:
+  - count Machines with `Ready != True` for current scope.
+  - count Machines with `metadata.deletionTimestamp` set for current scope.
+  - fail fast when either value exceeds `maxConcurrentUnavailable`.
+- Existing safety checks are still enforced before rollout wait/remediation starts.
 
-### 1) WorkflowTemplate (namespace `argo`)
-- File: `overlay/management/argo-workflows/capi-rollout-workflowtemplate.yaml`
-- Parameters:
-  - `clusterName` (required)
-  - `clusterNamespace` (default `default`)
-  - `pollInterval` (default `30s`)
-  - `controlPlaneTimeout` (default `45m`)
-  - `workersTimeout` (default `60m`)
-  - `maxRemediations` (default `2`)
-  - `rebootMode` (default `powercycle`)
-- Auto‑resolve:
-  - Talosconfig secret: label `cluster.x-k8s.io/cluster-name=<clusterName>` + name suffix `-talosconfig`.
-- Steps:
-  1) Resolve targets (TalosControlPlane + MachineDeployment) by label.
-  2) Preflight safety checks (TCP `maxSurge=0`, MD `maxSurge=0/maxUnavailable=1`).
-  3) Wait control plane rollout; remediate by deleting unhealthy CP Machine and rebooting its node.
-  4) Wait worker rollout; same remediation logic.
-  5) Summary output.
+## Trigger model
+Files:
+- `overlay/management/capi-rollout/event-source-capi-rollout.yaml`
+- `overlay/management/capi-rollout/sensor-capi-rollout.yaml`
 
-### 2) RBAC
-- File: `overlay/management/argo-workflows/capi-rollout-rbac.yaml`
-- ServiceAccount: `capi-rollout-runner` in `argo`.
-- ClusterRole: read CAPI/TalosControlPlane + secrets; delete Machines.
+- `md-upsert` event source and trigger are removed.
+- Only `tcp-upsert` events submit `capi-rollout-orchestrator`.
+- Manual submit remains supported for worker-only or ad-hoc rollouts.
 
-### 3) Argo Events trigger
-- Files:
-  - `overlay/management/capi-rollout/event-source-capi-rollout.yaml`
-  - `overlay/management/capi-rollout/sensor-capi-rollout.yaml`
-  - `overlay/management/capi-rollout/rbac.yaml`
-- Triggers on TalosControlPlane or MachineDeployment updates and submits workflow.
+## Argo CD apply order for single-commit TCP+MD changes
+Files:
+- `overlay/management/homelab/talos-config-template.yaml`
+- `overlay/management/homelab/machine-deployment.yaml`
+- `overlay/management/homelab/talos-control-plane.yaml`
 
-### 4) Kustomize + Apps
-- Add workflow + rbac to `overlay/management/argo-workflows/kustomization.yaml`.
-- Add `overlay/management/capi-rollout` kustomization.
-- Add ArgoCD app `apps/management/capi-rollout.yaml`.
+Required sync waves:
+- TalosConfigTemplate: `argocd.argoproj.io/sync-wave: "-2"`
+- MachineDeployment: `argocd.argoproj.io/sync-wave: "-1"`
+- TalosControlPlane: `argocd.argoproj.io/sync-wave: "0"`
 
-### 5) Safe rollout strategy
-- Update `overlay/management/homelab/machine-deployment.yaml`:
-  - `maxSurge: 0`
-  - `maxUnavailable: 1`
+This guarantees that in a combined TCP+MD commit, MD/TalosConfig changes are
+already applied when the TCP update event triggers the workflow.
 
 ## Validation
-- `kustomize build overlay/management/argo-workflows`
-- `kustomize build overlay/management/capi-rollout`
-- Manual submit test in Argo:
-  - `clusterName=homelab`
+Run:
 
-## Notes
-- Workflow avoids overrides for talosconfig/kubeconfig; resolution is purely label‑based.
-- If a node is in Maintenance Mode, the workflow fails with explicit manual action required.
+```bash
+kustomize build overlay/management/homelab
+kustomize build overlay/management/capi-rollout
+kustomize build overlay/management/argo-workflows
+```
+
+Note: the argo-workflows overlay uses ksops; local build requires ksops support.
+
+## Operational expectations
+- Single combined TCP+MD commit:
+  - exactly one active workflow per cluster (mutex).
+  - no more than one unavailable/deleting node at any time per scope.
+  - rollout sequence remains control plane then workers.
+- Trigger storms (multiple TCP updates):
+  - serialized execution; no concurrent cluster rollout runs.
+- MD-only commit:
+  - no automatic rollout trigger.
+  - trigger manually via workflow submission when needed.
