@@ -26,8 +26,8 @@ spec:
         value: "2"
       - name: maxConcurrentUnavailable
         value: "1"
-      - name: rebootMode
-        value: powercycle
+      - name: rebootTimeout
+        value: 30m
   templates:
     - name: rollout
       steps:
@@ -57,7 +57,7 @@ spec:
             POLL_INTERVAL="{{workflow.parameters.pollInterval}}"
             MAX_REMEDIATIONS="{{workflow.parameters.maxRemediations}}"
             MAX_CONCURRENT_UNAVAILABLE="{{workflow.parameters.maxConcurrentUnavailable}}"
-            REBOOT_MODE="{{workflow.parameters.rebootMode}}"
+            REBOOT_TIMEOUT="{{workflow.parameters.rebootTimeout}}"
             SCOPE="{{inputs.parameters.scope}}"
 
             if [ -z "${CLUSTER_NAME}" ]; then
@@ -278,7 +278,7 @@ spec:
                   kubectl -n "${CLUSTER_NAMESPACE}" delete machine "${TARGET_MACHINE}" --wait=false --ignore-not-found=true
 
                   echo "rebooting node ${NODE_IP} via talosctl"
-                  if ! output=$(${TALOSCTL_BIN} --talosconfig "${TALOSCONFIG_FILE}" -n "${NODE_IP}" reboot --mode=powercycle --wait=false 2>&1); then
+                  if ! output=$(${TALOSCTL_BIN} --talosconfig "${TALOSCONFIG_FILE}" -n "${NODE_IP}" reboot --mode=powercycle --wait=true --timeout "${REBOOT_TIMEOUT}" 2>&1); then
                     if echo "${output}" | grep -qi "certificate signed by unknown authority\|maintenance mode\|API is not implemented"; then
                       echo "node ${NODE_IP} in maintenance mode; manual action required"
                       exit 1
