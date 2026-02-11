@@ -1701,6 +1701,11 @@ spec:
                   dhcp: true
                   vip:
                     ip: 10.0.0.10
+        - |
+          cluster:
+            etcd:
+              extraArgs:
+                listen-metrics-urls: http://0.0.0.0:2381
       generateType: controlplane
       talosVersion: v1.12.3
     init:
