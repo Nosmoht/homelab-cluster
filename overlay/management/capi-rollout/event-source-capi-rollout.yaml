@@ -18,10 +18,3 @@ spec:
       eventTypes:
         - ADD
         - UPDATE
-    md-upsert:
-      group: cluster.x-k8s.io
-      version: v1beta1
-      resource: machinedeployments
-      eventTypes:
-        - ADD
-        - UPDATE

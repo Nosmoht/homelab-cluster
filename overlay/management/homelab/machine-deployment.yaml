@@ -2,6 +2,8 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
   name: homelab-workers
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
 spec:
   clusterName: homelab
   replicas: 3

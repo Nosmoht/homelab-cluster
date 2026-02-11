@@ -5,6 +5,9 @@ metadata:
 spec:
   serviceAccountName: capi-rollout-runner
   entrypoint: rollout
+  synchronization:
+    mutexes:
+      - name: capi-rollout-{{workflow.parameters.clusterNamespace}}-{{workflow.parameters.clusterName}}
   ttlStrategy:
     secondsAfterSuccess: 86400
     secondsAfterFailure: 86400
@@ -21,6 +24,8 @@ spec:
         value: 60m
       - name: maxRemediations
         value: "2"
+      - name: maxConcurrentUnavailable
+        value: "1"
       - name: rebootMode
         value: powercycle
   templates:
@@ -51,11 +56,22 @@ spec:
             CLUSTER_NAMESPACE="{{workflow.parameters.clusterNamespace}}"
             POLL_INTERVAL="{{workflow.parameters.pollInterval}}"
             MAX_REMEDIATIONS="{{workflow.parameters.maxRemediations}}"
+            MAX_CONCURRENT_UNAVAILABLE="{{workflow.parameters.maxConcurrentUnavailable}}"
             REBOOT_MODE="{{workflow.parameters.rebootMode}}"
             SCOPE="{{inputs.parameters.scope}}"
 
             if [ -z "${CLUSTER_NAME}" ]; then
               echo "clusterName is required"
+              exit 1
+            fi
+            case "${MAX_CONCURRENT_UNAVAILABLE}" in
+              ''|*[!0-9]*)
+                echo "maxConcurrentUnavailable must be a positive integer, got '${MAX_CONCURRENT_UNAVAILABLE}'"
+                exit 1
+                ;;
+            esac
+            if [ "${MAX_CONCURRENT_UNAVAILABLE}" -lt 1 ]; then
+              echo "maxConcurrentUnavailable must be >= 1, got '${MAX_CONCURRENT_UNAVAILABLE}'"
               exit 1
             fi
 
@@ -181,6 +197,22 @@ spec:
               echo "$ip"
             }
 
+            check_concurrency_guard() {
+              unavailable_count="$(kubectl -n "${CLUSTER_NAMESPACE}" get machines -l "${MACHINE_SELECTOR}" -o jsonpath='{range .items[*]}{.status.conditions[?(@.type=="Ready")].status}{"\n"}{end}' | awk '$1 != "True" { c++ } END { print c+0 }')"
+              deleting_count="$(kubectl -n "${CLUSTER_NAMESPACE}" get machines -l "${MACHINE_SELECTOR}" -o jsonpath='{range .items[*]}{.metadata.deletionTimestamp}{"\n"}{end}' | awk 'NF { c++ } END { print c+0 }')"
+
+              echo "guard ${RESOURCE_KIND}/${RESOURCE_NAME}: unavailable=${unavailable_count} deleting=${deleting_count} maxConcurrentUnavailable=${MAX_CONCURRENT_UNAVAILABLE}"
+
+              if [ "${unavailable_count}" -gt "${MAX_CONCURRENT_UNAVAILABLE}" ]; then
+                echo "guard violation: unavailable machines (${unavailable_count}) exceed maxConcurrentUnavailable (${MAX_CONCURRENT_UNAVAILABLE})"
+                exit 1
+              fi
+              if [ "${deleting_count}" -gt "${MAX_CONCURRENT_UNAVAILABLE}" ]; then
+                echo "guard violation: deleting machines (${deleting_count}) exceed maxConcurrentUnavailable (${MAX_CONCURRENT_UNAVAILABLE})"
+                exit 1
+              fi
+            }
+
             wait_rollout() {
               while true; do
                 GEN="$(kubectl -n "${CLUSTER_NAMESPACE}" get "${RESOURCE_KIND}" "${RESOURCE_NAME}" -o jsonpath='{.metadata.generation}')"
@@ -201,6 +233,7 @@ spec:
                 OBS=${OBS:-0}
 
                 echo "${RESOURCE_KIND}/${RESOURCE_NAME}: gen=${GEN} observed=${OBS} replicas=${REPLICAS} updated=${UPDATED} ready=${READY} specUpToDate=${SPEC_UPTODATE}"
+                check_concurrency_guard
 
                 if [ "$UPDATED" = "$REPLICAS" ] && [ "$READY" = "$REPLICAS" ] && [ "$OBS" = "$GEN" ] && [ "$SPEC_UPTODATE" = "True" ]; then
                   echo "${RESOURCE_KIND}/${RESOURCE_NAME} rollout complete"
