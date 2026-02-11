@@ -39,6 +39,9 @@ rules:
     resources: ["workflows"]
     verbs: ["create", "get", "list", "watch"]
   - apiGroups: ["argoproj.io"]
+    resources: ["workflowtemplates"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["argoproj.io"]
     resources: ["workflowtaskresults"]
     verbs: ["create", "patch"]
 ---
