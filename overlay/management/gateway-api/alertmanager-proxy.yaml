@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: homelab-alertmanager
+  namespace: gateway
+  labels:
+    app: homelab-alertmanager
+spec:
+  ports:
+    - name: http
+      port: 4180
+      targetPort: 4180
+  selector: {}
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: homelab-alertmanager
+  namespace: gateway
+  labels:
+    kubernetes.io/service-name: homelab-alertmanager
+addressType: IPv4
+endpoints:
+  - addresses:
+      - 10.0.0.72
+ports:
+  - name: http
+    port: 4180
+    protocol: TCP

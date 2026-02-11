@@ -9,3 +9,7 @@ resources:
   - referencegrant.yaml
   - grafana-proxy.yaml
   - grafana-httproute.yaml
+  - prometheus-proxy.yaml
+  - prometheus-httproute.yaml
+  - alertmanager-proxy.yaml
+  - alertmanager-httproute.yaml

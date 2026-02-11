@@ -13,3 +13,5 @@ spec:
     - argoworkflows.homelab.ntbc.io
     - dex.homelab.ntbc.io
     - grafana.homelab.ntbc.io
+    - prometheus.homelab.ntbc.io
+    - alertmanager.homelab.ntbc.io

@@ -63,6 +63,16 @@ spec:
                 secretKeyRef:
                   name: dex-grafana-oidc-secret
                   key: grafana-oidc-client-secret
+            - name: PROMETHEUS_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: dex-monitoring-oidc-secrets
+                  key: prometheus-oidc-client-secret
+            - name: ALERTMANAGER_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: dex-monitoring-oidc-secrets
+                  key: alertmanager-oidc-client-secret
           volumeMounts:
             - name: config
               mountPath: /etc/dex/cfg
