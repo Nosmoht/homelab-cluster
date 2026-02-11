@@ -40,3 +40,13 @@ data:
         redirectURIs:
           - https://grafana.homelab.ntbc.io/login/generic_oauth
         secretEnv: GRAFANA_OIDC_CLIENT_SECRET
+      - id: prometheus
+        name: Prometheus
+        redirectURIs:
+          - https://prometheus.homelab.ntbc.io/oauth2/callback
+        secretEnv: PROMETHEUS_OIDC_CLIENT_SECRET
+      - id: alertmanager
+        name: Alertmanager
+        redirectURIs:
+          - https://alertmanager.homelab.ntbc.io/oauth2/callback
+        secretEnv: ALERTMANAGER_OIDC_CLIENT_SECRET
