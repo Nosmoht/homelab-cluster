@@ -15,7 +15,7 @@ spec:
           - expr: clusterName != ""
             fields:
               - name: clusterName
-                path: body.metadata.labels.cluster\\.x-k8s\\.io/cluster-name
+                path: body.metadata.ownerReferences.0.name
           - expr: generation != observed
             fields:
               - name: generation
@@ -50,7 +50,7 @@ spec:
       parameters:
         - src:
             dependencyName: tcp-upsert
-            dataKey: body.metadata.labels.cluster\\.x-k8s\\.io/cluster-name
+            dataKey: body.metadata.ownerReferences.0.name
           dest: spec.arguments.parameters.0.value
         - src:
             dependencyName: tcp-upsert
