@@ -188,13 +188,23 @@ spec:
                   done
             }
 
-            machine_node_ip() {
+            machine_node_name() {
               machine="$1"
-              ip="$(kubectl -n "${CLUSTER_NAMESPACE}" get machine "${machine}" -o jsonpath='{.status.addresses[?(@.type=="InternalIP")].address}' 2>/dev/null || true)"
-              if [ -z "$ip" ]; then
-                ip="$(kubectl -n "${CLUSTER_NAMESPACE}" get machine "${machine}" -o jsonpath='{.status.addresses[0].address}' 2>/dev/null || true)"
+              kubectl -n "${CLUSTER_NAMESPACE}" get machine "${machine}" -o jsonpath='{.status.nodeRef.name}' 2>/dev/null || true
+            }
+
+            node_internal_ip() {
+              node_name="$1"
+              if [ -z "$node_name" ]; then
+                echo ""
+                return 0
               fi
-              echo "$ip"
+              kubectl get node "${node_name}" -o jsonpath='{.status.addresses[?(@.type=="InternalIP")].address}' 2>/dev/null || true
+            }
+
+            machine_internal_ip() {
+              machine="$1"
+              kubectl -n "${CLUSTER_NAMESPACE}" get machine "${machine}" -o jsonpath='{.status.addresses[?(@.type=="InternalIP")].address}' 2>/dev/null || true
             }
 
             check_concurrency_guard() {
@@ -254,16 +264,21 @@ spec:
                   fi
 
                   echo "remediating machine ${TARGET_MACHINE}"
-                  NODE_IP="$(machine_node_ip "${TARGET_MACHINE}")"
-                  if [ -z "$NODE_IP" ]; then
-                    echo "failed to determine node IP for ${TARGET_MACHINE}"
+                  NODE_NAME="$(machine_node_name "${TARGET_MACHINE}")"
+                  NODE_IP="$(node_internal_ip "${NODE_NAME}")"
+                  if [ -z "${NODE_IP}" ]; then
+                    NODE_IP="$(machine_internal_ip "${TARGET_MACHINE}")"
+                  fi
+                  if [ -z "${NODE_IP}" ]; then
+                    echo "failed to determine internal IP for ${TARGET_MACHINE} (nodeRef=${NODE_NAME})"
                     exit 1
                   fi
 
-                  kubectl -n "${CLUSTER_NAMESPACE}" delete machine "${TARGET_MACHINE}" --wait=false
+                  echo "deleting machine ${TARGET_MACHINE}"
+                  kubectl -n "${CLUSTER_NAMESPACE}" delete machine "${TARGET_MACHINE}" --wait=false --ignore-not-found=true
 
                   echo "rebooting node ${NODE_IP} via talosctl"
-                  if ! output=$(${TALOSCTL_BIN} --talosconfig "${TALOSCONFIG_FILE}" -n "${NODE_IP}" reboot --mode "${REBOOT_MODE}" --wait=false 2>&1); then
+                  if ! output=$(${TALOSCTL_BIN} --talosconfig "${TALOSCONFIG_FILE}" -n "${NODE_IP}" reboot --mode=powercycle --wait=false 2>&1); then
                     if echo "${output}" | grep -qi "certificate signed by unknown authority\|maintenance mode\|API is not implemented"; then
                       echo "node ${NODE_IP} in maintenance mode; manual action required"
                       exit 1
