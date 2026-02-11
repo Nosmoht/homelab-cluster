@@ -30,10 +30,9 @@ subjects:
     namespace: argo-events
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: ClusterRole
 metadata:
   name: capi-rollout-workflow-submit
-  namespace: argo
 rules:
   - apiGroups: ["argoproj.io"]
     resources: ["workflows"]
@@ -46,15 +45,14 @@ rules:
     verbs: ["create", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
+kind: ClusterRoleBinding
 metadata:
   name: capi-rollout-workflow-submit
-  namespace: argo
 subjects:
   - kind: ServiceAccount
     name: capi-rollout
     namespace: argo-events
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: Role
+  kind: ClusterRole
   name: capi-rollout-workflow-submit
