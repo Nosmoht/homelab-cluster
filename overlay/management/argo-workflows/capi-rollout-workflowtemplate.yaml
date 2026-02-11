@@ -30,6 +30,18 @@ spec:
         value: powercycle
       - name: rebootTimeout
         value: 30m
+      - name: linstorGuardEnabled
+        value: "true"
+      - name: linstorNamespace
+        value: piraeus-datastore
+      - name: linstorControllerSelector
+        value: app.kubernetes.io/component=linstor-controller
+      - name: linstorStoragePool
+        value: lvm-thick
+      - name: linstorEvacuationTimeout
+        value: 45m
+      - name: linstorSettleTimeout
+        value: 30m
   templates:
     - name: rollout
       steps:
@@ -61,6 +73,12 @@ spec:
             MAX_CONCURRENT_UNAVAILABLE="{{workflow.parameters.maxConcurrentUnavailable}}"
             REBOOT_MODE="{{workflow.parameters.rebootMode}}"
             REBOOT_TIMEOUT="{{workflow.parameters.rebootTimeout}}"
+            LINSTOR_GUARD_ENABLED="$(printf '%s' "{{workflow.parameters.linstorGuardEnabled}}" | tr '[:upper:]' '[:lower:]')"
+            LINSTOR_NAMESPACE="{{workflow.parameters.linstorNamespace}}"
+            LINSTOR_CONTROLLER_SELECTOR="{{workflow.parameters.linstorControllerSelector}}"
+            LINSTOR_STORAGE_POOL="{{workflow.parameters.linstorStoragePool}}"
+            LINSTOR_EVAC_TIMEOUT_RAW="{{workflow.parameters.linstorEvacuationTimeout}}"
+            LINSTOR_SETTLE_TIMEOUT_RAW="{{workflow.parameters.linstorSettleTimeout}}"
             SCOPE="{{inputs.parameters.scope}}"
 
             if [ -z "${CLUSTER_NAME}" ]; then
@@ -77,6 +95,14 @@ spec:
               echo "maxConcurrentUnavailable must be >= 1, got '${MAX_CONCURRENT_UNAVAILABLE}'"
               exit 1
             fi
+            case "${LINSTOR_GUARD_ENABLED}" in
+              true|false)
+                ;;
+              *)
+                echo "linstorGuardEnabled must be true or false, got '${LINSTOR_GUARD_ENABLED}'"
+                exit 1
+                ;;
+            esac
 
             duration_to_seconds() {
               value="$1"
@@ -108,6 +134,166 @@ spec:
                 exit 1
               fi
               echo "$name"
+            }
+
+            resolve_single_in_namespace() {
+              namespace="$1"
+              label_selector="$2"
+              resource="$3"
+              name="$(kubectl -n "${namespace}" get "${resource}" -l "${label_selector}" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)"
+              count="$(kubectl -n "${namespace}" get "${resource}" -l "${label_selector}" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null | wc -w | tr -d ' ')"
+              if [ "$count" != "1" ]; then
+                echo "expected exactly one ${resource} in namespace ${namespace} with selector ${label_selector}, found ${count}"
+                kubectl -n "${namespace}" get "${resource}" -l "${label_selector}" -o name || true
+                exit 1
+              fi
+              echo "$name"
+            }
+
+            table_row_count() {
+              awk -F'|' '
+                function trim(s) { gsub(/^[[:space:]]+|[[:space:]]+$/, "", s); return s }
+                /^\|/ {
+                  first = trim($2)
+                  if (first == "" || first == "ResourceName" || first ~ /^=+$/) {
+                    next
+                  }
+                  count++
+                }
+                END { print count + 0 }
+              '
+            }
+
+            linstor_unsettled_count() {
+              awk -F'|' '
+                function trim(s) { gsub(/^[[:space:]]+|[[:space:]]+$/, "", s); return s }
+                /^\|/ {
+                  resource = trim($2)
+                  conns = trim($6)
+                  state = trim($7)
+                  if (resource == "" || resource == "ResourceName" || resource ~ /^=+$/) {
+                    next
+                  }
+                  if ((conns != "" && conns != "Ok") || state ~ /Sync|DELETING/) {
+                    count++
+                  }
+                }
+                END { print count + 0 }
+              '
+            }
+
+            run_linstor() {
+              if [ -z "${LINSTOR_CONTROLLER_POD:-}" ]; then
+                echo "LINSTOR controller pod is not initialized"
+                exit 1
+              fi
+              kubectl -n "${LINSTOR_NAMESPACE}" exec "${LINSTOR_CONTROLLER_POD}" -- linstor "$@"
+            }
+
+            check_linstor_global_health() {
+              if ! faulty_output="$(run_linstor resource list --faulty --pastable 2>&1)"; then
+                echo "failed to query LINSTOR faulty resources"
+                printf '%s\n' "${faulty_output}"
+                exit 1
+              fi
+              faulty_count="$(printf '%s\n' "${faulty_output}" | table_row_count)"
+              echo "linstor global health: faultyResources=${faulty_count}"
+              if [ "${faulty_count}" -gt 0 ]; then
+                echo "LINSTOR has faulty resources; refusing remediation"
+                printf '%s\n' "${faulty_output}"
+                exit 1
+              fi
+            }
+
+            wait_linstor_node_evacuated() {
+              node_name="$1"
+              start_time="$(date +%s)"
+              while true; do
+                if ! output="$(run_linstor resource list --pastable --nodes "${node_name}" --props "StorPoolName=${LINSTOR_STORAGE_POOL}" 2>&1)"; then
+                  echo "failed to query LINSTOR resources for node ${node_name}"
+                  printf '%s\n' "${output}"
+                  exit 1
+                fi
+
+                diskful_count="$(printf '%s\n' "${output}" | table_row_count)"
+                echo "linstor evacuation status: node=${node_name} pool=${LINSTOR_STORAGE_POOL} diskfulReplicas=${diskful_count}"
+                if [ "${diskful_count}" -eq 0 ]; then
+                  break
+                fi
+
+                now="$(date +%s)"
+                if [ $((now - start_time)) -ge "${LINSTOR_EVAC_TIMEOUT_SECONDS}" ]; then
+                  echo "timeout waiting for LINSTOR evacuation on node ${node_name}"
+                  printf '%s\n' "${output}"
+                  exit 1
+                fi
+
+                sleep "${POLL_INTERVAL}"
+              done
+            }
+
+            evacuate_linstor_node() {
+              node_name="$1"
+              echo "evacuating LINSTOR resources from node ${node_name}"
+              if ! output="$(run_linstor node evacuate "${node_name}" 2>&1)"; then
+                echo "linstor node evacuate failed for ${node_name}"
+                printf '%s\n' "${output}"
+                exit 1
+              fi
+              printf '%s\n' "${output}"
+              wait_linstor_node_evacuated "${node_name}"
+            }
+
+            restore_linstor_node() {
+              node_name="$1"
+              start_time="$(date +%s)"
+              while true; do
+                if output="$(run_linstor node restore "${node_name}" 2>&1)"; then
+                  printf '%s\n' "${output}"
+                  break
+                fi
+
+                if echo "${output}" | grep -qi "not evicted"; then
+                  echo "linstor node ${node_name} is not evicted; skipping restore"
+                  break
+                fi
+
+                now="$(date +%s)"
+                if [ $((now - start_time)) -ge "${LINSTOR_SETTLE_TIMEOUT_SECONDS}" ]; then
+                  echo "timeout restoring LINSTOR node ${node_name}"
+                  printf '%s\n' "${output}"
+                  exit 1
+                fi
+
+                echo "linstor node restore retry for ${node_name}: ${output}"
+                sleep "${POLL_INTERVAL}"
+              done
+            }
+
+            wait_linstor_settled() {
+              start_time="$(date +%s)"
+              while true; do
+                if ! output="$(run_linstor resource list --pastable 2>&1)"; then
+                  echo "failed to query LINSTOR resource settle status"
+                  printf '%s\n' "${output}"
+                  exit 1
+                fi
+
+                unsettled_count="$(printf '%s\n' "${output}" | linstor_unsettled_count)"
+                echo "linstor settle status: unsettledResources=${unsettled_count}"
+                if [ "${unsettled_count}" -eq 0 ]; then
+                  break
+                fi
+
+                now="$(date +%s)"
+                if [ $((now - start_time)) -ge "${LINSTOR_SETTLE_TIMEOUT_SECONDS}" ]; then
+                  echo "timeout waiting for LINSTOR to settle"
+                  printf '%s\n' "${output}"
+                  exit 1
+                fi
+
+                sleep "${POLL_INTERVAL}"
+              done
             }
 
             TCP_NAME="$(resolve_single "cluster.x-k8s.io/cluster-name=${CLUSTER_NAME}" taloscontrolplane)"
@@ -174,6 +360,35 @@ spec:
             fi
 
             TIMEOUT_SECONDS="$(duration_to_seconds "${TIMEOUT_RAW}")"
+            if [ "${LINSTOR_GUARD_ENABLED}" = "true" ]; then
+              if [ -z "${LINSTOR_NAMESPACE}" ] || [ -z "${LINSTOR_CONTROLLER_SELECTOR}" ] || [ -z "${LINSTOR_STORAGE_POOL}" ]; then
+                echo "linstorNamespace, linstorControllerSelector and linstorStoragePool are required when linstorGuardEnabled=true"
+                exit 1
+              fi
+
+              LINSTOR_EVAC_TIMEOUT_SECONDS="$(duration_to_seconds "${LINSTOR_EVAC_TIMEOUT_RAW}")"
+              LINSTOR_SETTLE_TIMEOUT_SECONDS="$(duration_to_seconds "${LINSTOR_SETTLE_TIMEOUT_RAW}")"
+
+              case "${LINSTOR_EVAC_TIMEOUT_SECONDS}" in
+                ''|*[!0-9]*)
+                  echo "linstorEvacuationTimeout must resolve to a positive duration, got '${LINSTOR_EVAC_TIMEOUT_RAW}'"
+                  exit 1
+                  ;;
+              esac
+              case "${LINSTOR_SETTLE_TIMEOUT_SECONDS}" in
+                ''|*[!0-9]*)
+                  echo "linstorSettleTimeout must resolve to a positive duration, got '${LINSTOR_SETTLE_TIMEOUT_RAW}'"
+                  exit 1
+                  ;;
+              esac
+              if [ "${LINSTOR_EVAC_TIMEOUT_SECONDS}" -lt 1 ] || [ "${LINSTOR_SETTLE_TIMEOUT_SECONDS}" -lt 1 ]; then
+                echo "LINSTOR timeouts must be >= 1 second"
+                exit 1
+              fi
+
+              LINSTOR_CONTROLLER_POD="$(resolve_single_in_namespace "${LINSTOR_NAMESPACE}" "${LINSTOR_CONTROLLER_SELECTOR}" pod)"
+              echo "using LINSTOR controller pod ${LINSTOR_CONTROLLER_POD} in namespace ${LINSTOR_NAMESPACE}"
+            fi
             START_TIME="$(date +%s)"
             REMEDIATIONS=0
 
@@ -277,6 +492,15 @@ spec:
                     exit 1
                   fi
 
+                  if [ "${LINSTOR_GUARD_ENABLED}" = "true" ]; then
+                    if [ -z "${NODE_NAME}" ]; then
+                      echo "linstor guard requires nodeRef.name for ${TARGET_MACHINE}"
+                      exit 1
+                    fi
+                    check_linstor_global_health
+                    evacuate_linstor_node "${NODE_NAME}"
+                  fi
+
                   echo "deleting machine ${TARGET_MACHINE}"
                   kubectl -n "${CLUSTER_NAMESPACE}" delete machine "${TARGET_MACHINE}" --wait=false --ignore-not-found=true
 
@@ -288,6 +512,12 @@ spec:
                     fi
                     echo "talosctl reboot failed: ${output}"
                     exit 1
+                  fi
+
+                  if [ "${LINSTOR_GUARD_ENABLED}" = "true" ]; then
+                    restore_linstor_node "${NODE_NAME}"
+                    wait_linstor_settled
+                    check_linstor_global_health
                   fi
 
                   REMEDIATIONS=$((REMEDIATIONS + 1))

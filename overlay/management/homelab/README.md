@@ -35,6 +35,24 @@ Pinned versions in these manifests:
   - `siderolabs/intel-ucode`
   - `siderolabs/nvme-cli`
 
+## Rollout data safety (LINSTOR)
+
+- `source.hostDevices` for LINSTOR is intentionally enabled (automatic PV/VG/LVM
+  provisioning).
+- For machine remediation, the rollout workflow must evacuate LINSTOR resources
+  from the target node before `Machine` deletion and reboot.
+- After node rejoin, the workflow restores the LINSTOR node and waits for a
+  settled state before proceeding to the next node.
+- This fail-safe flow prevents storage data loss during reinstall/remediation
+  in no-spare-node operation.
+
+## Local ops config
+
+Operational checks can use the local helper configs in the repository root:
+
+- `/Users/thomaskrahn/workspace/sidero-apps/kubeconfig-homelab`
+- `/Users/thomaskrahn/workspace/sidero-apps/talosconfig-homelab`
+
 ## Local-only files
 
 `homelab-kubeconfig` and `homelab-talosconfig` are local helper files and are
