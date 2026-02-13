@@ -29,6 +29,10 @@ spec:
       macs:
         - 00:23:24:ea:af:90
       hostname: node-06
+    - ip: 10.0.0.17
+      macs:
+        - 08:2e:5f:10:6d:7d
+      hostname: node-gpu-01
     - ip: 10.0.0.254
       macs:
         - 54:07:7d:20:b0:53

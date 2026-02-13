@@ -37,6 +37,10 @@ spec:
       hostnames:
         - node-06
         - node-06.lan.ntbc.io
+    - ip: 10.0.0.17
+      hostnames:
+        - node-gpu-01
+        - node-gpu-01.lan.ntbc.io
     - ip: 10.0.0.254
       hostnames:
         - switch
