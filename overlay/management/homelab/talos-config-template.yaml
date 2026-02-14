@@ -1,7 +1,7 @@
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
 kind: TalosConfigTemplate
 metadata:
-  name: homelab-workers-v1-12-3-1
+  name: homelab-workers-v1-12-4-1
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
 spec:
@@ -27,7 +27,7 @@ spec:
                     - usermode_helper=disabled
                 - name: drbd_transport_tcp
             install:
-              image: factory.talos.dev/metal-installer/1a1a8fdf48ac2c0647ad26a55b1a476f1a1d8862a68a758ce45f0806eefa61e1:v1.12.3
+              image: factory.talos.dev/metal-installer/21673c24c2599d637798768b9b706349ca91161583257179df72d775af9348c0:v1.12.4
             kubelet:
               extraArgs:
                 rotate-server-certificates: true
@@ -38,4 +38,4 @@ spec:
                     physical: true
                   dhcp: true
       generateType: join
-      talosVersion: v1.12.3
+      talosVersion: v1.12.4

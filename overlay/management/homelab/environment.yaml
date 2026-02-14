@@ -4,7 +4,7 @@ metadata:
   name: homelab
 spec:
   initrd:
-    url: https://pxe.factory.talos.dev/image/1a1a8fdf48ac2c0647ad26a55b1a476f1a1d8862a68a758ce45f0806eefa61e1/v1.12.3/initramfs-amd64.xz
+    url: https://pxe.factory.talos.dev/image/21673c24c2599d637798768b9b706349ca91161583257179df72d775af9348c0/v1.12.4/initramfs-amd64.xz
   kernel:
     args:
       - console=tty0
@@ -20,4 +20,4 @@ spec:
       - selinux=1
       - slab_nomerge=
       - talos.platform=metal
-    url: https://pxe.factory.talos.dev/image/1a1a8fdf48ac2c0647ad26a55b1a476f1a1d8862a68a758ce45f0806eefa61e1/v1.12.3/kernel-amd64
+    url: https://pxe.factory.talos.dev/image/21673c24c2599d637798768b9b706349ca91161583257179df72d775af9348c0/v1.12.4/kernel-amd64

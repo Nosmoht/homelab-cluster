@@ -5,7 +5,7 @@ workload cluster.
 
 Pinned versions in these manifests:
 
-- Talos: `v1.12.3`
+- Talos: `v1.12.4`
 - Kubernetes: `v1.35.0`
 - Cilium: `v1.19.0` (inline manifest, kube-proxy replacement enabled, Hubble disabled)
 - kubelet-serving-cert-approver: `v0.10.2`
@@ -27,14 +27,14 @@ Pinned versions in these manifests:
 
 ## Talos image factory schematic
 
-- Schematic ID: `1a1a8fdf48ac2c0647ad26a55b1a476f1a1d8862a68a758ce45f0806eefa61e1`
+- Schematic ID: `21673c24c2599d637798768b9b706349ca91161583257179df72d775af9348c0`
 - Initial/Upgrade installer image:
-  - `factory.talos.dev/metal-installer/1a1a8fdf48ac2c0647ad26a55b1a476f1a1d8862a68a758ce45f0806eefa61e1:v1.12.3`
+  - `factory.talos.dev/metal-installer/21673c24c2599d637798768b9b706349ca91161583257179df72d775af9348c0:v1.12.4`
 - PXE iPXE entrypoint:
-  - `https://pxe.factory.talos.dev/pxe/1a1a8fdf48ac2c0647ad26a55b1a476f1a1d8862a68a758ce45f0806eefa61e1/v1.12.3/metal-amd64`
+  - `https://pxe.factory.talos.dev/pxe/21673c24c2599d637798768b9b706349ca91161583257179df72d775af9348c0/v1.12.4/metal-amd64`
 - PXE boot assets:
-  - `https://pxe.factory.talos.dev/image/1a1a8fdf48ac2c0647ad26a55b1a476f1a1d8862a68a758ce45f0806eefa61e1/v1.12.3/kernel-amd64`
-  - `https://pxe.factory.talos.dev/image/1a1a8fdf48ac2c0647ad26a55b1a476f1a1d8862a68a758ce45f0806eefa61e1/v1.12.3/initramfs-amd64.xz`
+  - `https://pxe.factory.talos.dev/image/21673c24c2599d637798768b9b706349ca91161583257179df72d775af9348c0/v1.12.4/kernel-amd64`
+  - `https://pxe.factory.talos.dev/image/21673c24c2599d637798768b9b706349ca91161583257179df72d775af9348c0/v1.12.4/initramfs-amd64.xz`
 - Bootloader:
   - `sd-boot`
 - System extensions:
@@ -43,6 +43,8 @@ Pinned versions in these manifests:
   - `siderolabs/intel-ice-firmware`
   - `siderolabs/intel-ucode`
   - `siderolabs/nvme-cli`
+  - `siderolabs/nonfree-kmod-nvidia-lts`
+  - `siderolabs/nvidia-container-toolkit-lts`
 
 ## Rollout data safety (LINSTOR)
 
