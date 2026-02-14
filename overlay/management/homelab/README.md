@@ -42,7 +42,7 @@ Pinned versions in these manifests:
 ## Worker bootstrap templates
 
 - `homelab-compute-v1-12-4-1`: non-GPU installer image.
-- `homelab-compute-gpu-v1-12-4-1`: GPU installer image.
+- `homelab-compute-gpu-v1-12-4-2`: GPU installer image.
 
 ## NVIDIA on Talos
 

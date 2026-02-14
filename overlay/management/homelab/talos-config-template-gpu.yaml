@@ -1,7 +1,7 @@
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
 kind: TalosConfigTemplate
 metadata:
-  name: homelab-compute-gpu-v1-12-4-1
+  name: homelab-compute-gpu-v1-12-4-2
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
 spec:
