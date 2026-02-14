@@ -54,6 +54,16 @@ Pinned versions in these manifests:
 - Runtime class `nvidia` is managed separately and deployed before the
   `nvidia-device-plugin` app.
 
+## NVIDIA on Talos
+
+- GPU nodes use the OSS NVIDIA kernel modules (`nvidia-open-gpu-kernel-modules-lts`).
+- GPU Talos config explicitly loads `nvidia`, `nvidia_uvm`, `nvidia_modeset`,
+  and `nvidia_drm` kernel modules.
+- Kubernetes device discovery/allocation is provided by `nvidia-device-plugin`
+  (standalone deployment), not by the full GPU Operator stack.
+- Runtime class `nvidia` is managed separately and deployed before the
+  `nvidia-device-plugin` app.
+
 ## Cilium bootstrap notes
 
 - Cilium is configured to talk to the API server via kubePrism (`localhost:7445`).
