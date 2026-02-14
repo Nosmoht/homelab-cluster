@@ -16,12 +16,16 @@ spec:
     targetRevision: v25.3.4
     helm:
       valuesObject:
+        nfd:
+          enabled: false
         driver:
           enabled: false
         toolkit:
           enabled: false
         operator:
           defaultRuntime: containerd
+        validator:
+          plugin: false
   syncPolicy:
     automated:
       prune: true
