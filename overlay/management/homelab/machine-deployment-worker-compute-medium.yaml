@@ -1,12 +1,12 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
-  name: homelab-workers
+  name: homelab-compute-medium
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
 spec:
   clusterName: homelab
-  replicas: 3
+  replicas: 1
   strategy:
     rollingUpdate:
       maxSurge: 0
@@ -18,12 +18,12 @@ spec:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
           kind: TalosConfigTemplate
-          name: homelab-workers-v1-12-4-1
+          name: homelab-compute-v1-12-4-1
           namespace: default
       clusterName: homelab
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
         kind: MetalMachineTemplate
-        name: homelab-workers
+        name: homelab-compute-medium
         namespace: default
       version: v1.35.0

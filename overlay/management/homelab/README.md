@@ -11,6 +11,39 @@ Pinned versions in these manifests:
 - kubelet-serving-cert-approver: `v0.10.2`
 - metrics-server: `v0.8.1`
 
+## ServerClass layout
+
+- `homelab-cp-i5`: control plane nodes (`Intel(R) Core(TM) i5-7400T CPU @ 2.40GHz`)
+- `homelab-compute-slow`: worker nodes (`Intel(R) Core(TM) i3-6100T CPU @ 3.20GHz`)
+- `homelab-compute-medium`: worker nodes (`Intel(R) Core(TM) i5-7500T CPU @ 2.70GHz`)
+- `homelab-compute-fast`: worker nodes (`Intel(R) Core(TM) i7-7700T CPU @ 2.90GHz`)
+- `homelab-compute-gpu`: dedicated GPU worker class
+
+## Talos image factory schematics
+
+- Standard schematic ID: `1a1a8fdf48ac2c0647ad26a55b1a476f1a1d8862a68a758ce45f0806eefa61e1`
+  - Extensions:
+    - `siderolabs/drbd`
+    - `siderolabs/i915`
+    - `siderolabs/intel-ice-firmware`
+    - `siderolabs/intel-ucode`
+    - `siderolabs/nvme-cli`
+- GPU schematic ID: `21673c24c2599d637798768b9b706349ca91161583257179df72d775af9348c0`
+  - Extensions:
+    - all standard extensions
+    - `siderolabs/nonfree-kmod-nvidia-lts`
+    - `siderolabs/nvidia-container-toolkit-lts`
+
+## Environments
+
+- `homelab-compute` uses the standard (non-GPU) PXE kernel/initramfs.
+- `homelab-gpu` uses the GPU PXE kernel/initramfs.
+
+## Worker bootstrap templates
+
+- `homelab-compute-v1-12-4-1`: non-GPU installer image.
+- `homelab-compute-gpu-v1-12-4-1`: GPU installer image.
+
 ## Cilium bootstrap notes
 
 - Cilium is configured to talk to the API server via kubePrism (`localhost:7445`).
@@ -25,26 +58,6 @@ Pinned versions in these manifests:
 - Changes to the Talos control-plane config must roll out via CAPI/Talos
   Provider (not `talosctl upgrade`).
 
-## Talos image factory schematic
-
-- Schematic ID: `21673c24c2599d637798768b9b706349ca91161583257179df72d775af9348c0`
-- Initial/Upgrade installer image:
-  - `factory.talos.dev/metal-installer/21673c24c2599d637798768b9b706349ca91161583257179df72d775af9348c0:v1.12.4`
-- PXE iPXE entrypoint:
-  - `https://pxe.factory.talos.dev/pxe/21673c24c2599d637798768b9b706349ca91161583257179df72d775af9348c0/v1.12.4/metal-amd64`
-- PXE boot assets:
-  - `https://pxe.factory.talos.dev/image/21673c24c2599d637798768b9b706349ca91161583257179df72d775af9348c0/v1.12.4/kernel-amd64`
-  - `https://pxe.factory.talos.dev/image/21673c24c2599d637798768b9b706349ca91161583257179df72d775af9348c0/v1.12.4/initramfs-amd64.xz`
-- Bootloader:
-  - `sd-boot`
-- System extensions:
-  - `siderolabs/drbd`
-  - `siderolabs/i915`
-  - `siderolabs/intel-ice-firmware`
-  - `siderolabs/intel-ucode`
-  - `siderolabs/nvme-cli`
-  - `siderolabs/nonfree-kmod-nvidia-lts`
-  - `siderolabs/nvidia-container-toolkit-lts`
 
 ## Rollout data safety (LINSTOR)
 

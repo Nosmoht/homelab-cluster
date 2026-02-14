@@ -7,3 +7,5 @@ customization:
       - siderolabs/intel-ice-firmware
       - siderolabs/intel-ucode
       - siderolabs/nvme-cli
+      - siderolabs/nonfree-kmod-nvidia-lts
+      - siderolabs/nvidia-container-toolkit-lts
