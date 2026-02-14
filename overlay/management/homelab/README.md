@@ -58,6 +58,7 @@ Pinned versions in these manifests:
 - Changes to the Talos control-plane config must roll out via CAPI/Talos
   Provider (not `talosctl upgrade`).
 
+
 ## Rollout data safety (LINSTOR)
 
 - `source.hostDevices` for LINSTOR is intentionally enabled (automatic PV/VG/LVM
