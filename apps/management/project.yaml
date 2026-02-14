@@ -15,6 +15,8 @@ spec:
       name: homelab
     - namespace: nvidia-device-plugin
       name: homelab
+    - namespace: nvidia-dcgm-exporter
+      name: homelab
   clusterResourceWhitelist:
     - group: "*"
       kind: "*"
