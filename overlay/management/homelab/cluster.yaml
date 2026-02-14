@@ -2,6 +2,8 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   name: homelab
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   clusterNetwork:
     pods:

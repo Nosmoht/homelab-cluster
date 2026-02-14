@@ -3,7 +3,7 @@ kind: MachineDeployment
 metadata:
   name: homelab-compute-fast
   annotations:
-    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   clusterName: homelab
   replicas: 1
