@@ -8,7 +8,7 @@ metadata:
 spec:
   destination:
     namespace: gpu-operator
-    server: https://kubernetes.default.svc
+    name: homelab
   project: management
   source:
     chart: gpu-operator
