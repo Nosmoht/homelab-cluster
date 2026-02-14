@@ -233,7 +233,9 @@ spec:
                     synchronize-k8s-nodes: "true"
                     operator-api-serve-addr: "127.0.0.1:9234"
 
-                    enable-hubble: "false"
+                    enable-hubble: "true"
+                    hubble-metrics-server: ":9965"
+                    hubble-metrics: "dns:query;ignoreAAAA,drop,tcp,flow,port-distribution,icmp,httpV2"
                     ipam: "kubernetes"
                     ipam-cilium-node-update-rate: "15s"
 
@@ -1935,7 +1937,9 @@ spec:
                     synchronize-k8s-nodes: "true"
                     operator-api-serve-addr: "127.0.0.1:9234"
 
-                    enable-hubble: "false"
+                    enable-hubble: "true"
+                    hubble-metrics-server: ":9965"
+                    hubble-metrics: "dns:query;ignoreAAAA,drop,tcp,flow,port-distribution,icmp,httpV2"
                     ipam: "kubernetes"
                     ipam-cilium-node-update-rate: "15s"
 
