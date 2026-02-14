@@ -26,8 +26,14 @@ spec:
                   parameters:
                     - usermode_helper=disabled
                 - name: drbd_transport_tcp
+                - name: nvidia
+                - name: nvidia_uvm
+                - name: nvidia_modeset
+                - name: nvidia_drm
+            sysctls:
+              net.core.bpf_jit_harden: "1"
             install:
-              image: factory.talos.dev/metal-installer/21673c24c2599d637798768b9b706349ca91161583257179df72d775af9348c0:v1.12.4
+              image: factory.talos.dev/metal-installer/60b815d95e1e79a818edadfffafa3cf3e2dcab27c7e6bb4cd53ed4aa52f5df84:v1.12.4
             kubelet:
               extraArgs:
                 rotate-server-certificates: true
