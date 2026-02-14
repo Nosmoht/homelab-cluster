@@ -28,8 +28,14 @@ spec:
         value: "1"
       - name: rebootMode
         value: powercycle
+      - name: rebootWait
+        value: "false"
       - name: rebootTimeout
         value: 30m
+      - name: rebootRetryCount
+        value: "5"
+      - name: rebootRetryInterval
+        value: 15s
       - name: linstorGuardEnabled
         value: "true"
       - name: linstorNamespace
@@ -72,7 +78,10 @@ spec:
             MAX_REMEDIATIONS="{{workflow.parameters.maxRemediations}}"
             MAX_CONCURRENT_UNAVAILABLE="{{workflow.parameters.maxConcurrentUnavailable}}"
             REBOOT_MODE="{{workflow.parameters.rebootMode}}"
+            REBOOT_WAIT="$(printf '%s' "{{workflow.parameters.rebootWait}}" | tr '[:upper:]' '[:lower:]')"
             REBOOT_TIMEOUT="{{workflow.parameters.rebootTimeout}}"
+            REBOOT_RETRY_COUNT="{{workflow.parameters.rebootRetryCount}}"
+            REBOOT_RETRY_INTERVAL_RAW="{{workflow.parameters.rebootRetryInterval}}"
             LINSTOR_GUARD_ENABLED="$(printf '%s' "{{workflow.parameters.linstorGuardEnabled}}" | tr '[:upper:]' '[:lower:]')"
             LINSTOR_NAMESPACE="{{workflow.parameters.linstorNamespace}}"
             LINSTOR_CONTROLLER_SELECTOR="{{workflow.parameters.linstorControllerSelector}}"
@@ -103,6 +112,24 @@ spec:
                 exit 1
                 ;;
             esac
+            case "${REBOOT_WAIT}" in
+              true|false)
+                ;;
+              *)
+                echo "rebootWait must be true or false, got '${REBOOT_WAIT}'"
+                exit 1
+                ;;
+            esac
+            case "${REBOOT_RETRY_COUNT}" in
+              ''|*[!0-9]*)
+                echo "rebootRetryCount must be a positive integer, got '${REBOOT_RETRY_COUNT}'"
+                exit 1
+                ;;
+            esac
+            if [ "${REBOOT_RETRY_COUNT}" -lt 1 ]; then
+              echo "rebootRetryCount must be >= 1, got '${REBOOT_RETRY_COUNT}'"
+              exit 1
+            fi
 
             duration_to_seconds() {
               value="$1"
@@ -389,6 +416,17 @@ spec:
               LINSTOR_CONTROLLER_POD="$(resolve_single_in_namespace "${LINSTOR_NAMESPACE}" "${LINSTOR_CONTROLLER_SELECTOR}" pod)"
               echo "using LINSTOR controller pod ${LINSTOR_CONTROLLER_POD} in namespace ${LINSTOR_NAMESPACE}"
             fi
+            REBOOT_RETRY_INTERVAL_SECONDS="$(duration_to_seconds "${REBOOT_RETRY_INTERVAL_RAW}")"
+            case "${REBOOT_RETRY_INTERVAL_SECONDS}" in
+              ''|*[!0-9]*)
+                echo "rebootRetryInterval must resolve to a positive duration, got '${REBOOT_RETRY_INTERVAL_RAW}'"
+                exit 1
+                ;;
+            esac
+            if [ "${REBOOT_RETRY_INTERVAL_SECONDS}" -lt 1 ]; then
+              echo "rebootRetryInterval must be >= 1 second"
+              exit 1
+            fi
             START_TIME="$(date +%s)"
             REMEDIATIONS=0
 
@@ -423,6 +461,53 @@ spec:
             machine_internal_ip() {
               machine="$1"
               kubectl -n "${CLUSTER_NAMESPACE}" get machine "${machine}" -o jsonpath='{.status.addresses[?(@.type=="InternalIP")].address}' 2>/dev/null || true
+            }
+
+            first_ip() {
+              printf '%s\n' "$1" | awk '{print $1}'
+            }
+
+            is_retryable_reboot_error() {
+              printf '%s\n' "$1" | grep -Eqi "node .* not found|connection refused|context deadline exceeded|i/o timeout|no route to host|transport is closing|unexpected EOF|EOF|tls: first record does not look like a TLS handshake"
+            }
+
+            reboot_node() {
+              node_ip="$1"
+              wait_flag="$2"
+              attempt=1
+              while [ "${attempt}" -le "${REBOOT_RETRY_COUNT}" ]; do
+                echo "reboot attempt ${attempt}/${REBOOT_RETRY_COUNT} for ${node_ip} (mode=${REBOOT_MODE}, wait=${wait_flag})"
+                if output=$(${TALOSCTL_BIN} --talosconfig "${TALOSCONFIG_FILE}" -e "${node_ip}" -n "${node_ip}" reboot --mode="${REBOOT_MODE}" --wait="${wait_flag}" --timeout "${REBOOT_TIMEOUT}" 2>&1); then
+                  printf '%s\n' "${output}"
+                  return 0
+                fi
+
+                if echo "${output}" | grep -qi "certificate signed by unknown authority\|maintenance mode\|API is not implemented"; then
+                  echo "node ${node_ip} in maintenance mode; manual action required"
+                  printf '%s\n' "${output}"
+                  return 1
+                fi
+
+                # --wait=true can fail after the reboot command was already accepted.
+                if [ "${wait_flag}" = "true" ] && is_retryable_reboot_error "${output}"; then
+                  echo "talosctl reboot wait ended with transient error; continuing with rollout checks"
+                  printf '%s\n' "${output}"
+                  return 0
+                fi
+
+                if [ "${attempt}" -lt "${REBOOT_RETRY_COUNT}" ] && is_retryable_reboot_error "${output}"; then
+                  echo "retryable reboot error for ${node_ip}: ${output}"
+                  sleep "${REBOOT_RETRY_INTERVAL_SECONDS}"
+                  attempt=$((attempt + 1))
+                  continue
+                fi
+
+                echo "talosctl reboot failed for ${node_ip}: ${output}"
+                return 1
+              done
+
+              echo "talosctl reboot failed for ${node_ip} after ${REBOOT_RETRY_COUNT} attempts"
+              return 1
             }
 
             check_concurrency_guard() {
@@ -483,9 +568,9 @@ spec:
 
                   echo "remediating machine ${TARGET_MACHINE}"
                   NODE_NAME="$(machine_node_name "${TARGET_MACHINE}")"
-                  NODE_IP="$(node_internal_ip "${NODE_NAME}")"
+                  NODE_IP="$(first_ip "$(node_internal_ip "${NODE_NAME}")")"
                   if [ -z "${NODE_IP}" ]; then
-                    NODE_IP="$(machine_internal_ip "${TARGET_MACHINE}")"
+                    NODE_IP="$(first_ip "$(machine_internal_ip "${TARGET_MACHINE}")")"
                   fi
                   if [ -z "${NODE_IP}" ]; then
                     echo "failed to determine internal IP for ${TARGET_MACHINE} (nodeRef=${NODE_NAME})"
@@ -505,12 +590,7 @@ spec:
                   kubectl -n "${CLUSTER_NAMESPACE}" delete machine "${TARGET_MACHINE}" --wait=false --ignore-not-found=true
 
                   echo "rebooting node ${NODE_IP} via talosctl"
-                  if ! output=$(${TALOSCTL_BIN} --talosconfig "${TALOSCONFIG_FILE}" -n "${NODE_IP}" reboot --mode="${REBOOT_MODE}" --wait=true --timeout "${REBOOT_TIMEOUT}" 2>&1); then
-                    if echo "${output}" | grep -qi "certificate signed by unknown authority\|maintenance mode\|API is not implemented"; then
-                      echo "node ${NODE_IP} in maintenance mode; manual action required"
-                      exit 1
-                    fi
-                    echo "talosctl reboot failed: ${output}"
+                  if ! reboot_node "${NODE_IP}" "${REBOOT_WAIT}"; then
                     exit 1
                   fi
 
