@@ -41,7 +41,7 @@ Pinned versions in these manifests:
 
 ## Worker bootstrap templates
 
-- `homelab-workers-standard-v1-12-4-1`: non-GPU installer image.
+- `homelab-compute-v1-12-4-1`: non-GPU installer image.
 - `homelab-compute-gpu-v1-12-4-1`: GPU installer image.
 
 ## Cilium bootstrap notes

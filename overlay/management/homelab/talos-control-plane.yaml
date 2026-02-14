@@ -3417,7 +3417,7 @@ spec:
   infrastructureTemplate:
     apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
     kind: MetalMachineTemplate
-    name: homelab-cp
+    name: homelab-cp-i5
     namespace: default
   replicas: 3
   rolloutStrategy:
