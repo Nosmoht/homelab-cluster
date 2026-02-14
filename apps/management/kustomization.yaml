@@ -22,3 +22,4 @@ resources:
   - metallb.yaml
   - nvidia-runtimeclass.yaml
   - nvidia-device-plugin.yaml
+  - nvidia-dcgm-exporter.yaml
