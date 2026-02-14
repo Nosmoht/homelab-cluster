@@ -2,6 +2,8 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
 kind: MetalMachineTemplate
 metadata:
   name: homelab-compute-gpu
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
 spec:
   template:
     spec:

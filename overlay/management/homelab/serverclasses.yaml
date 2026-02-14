@@ -2,6 +2,8 @@ apiVersion: metal.sidero.dev/v1alpha2
 kind: ServerClass
 metadata:
   name: homelab-cp-i5
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
 spec:
   strategicPatches:
     - |
@@ -21,6 +23,8 @@ apiVersion: metal.sidero.dev/v1alpha2
 kind: ServerClass
 metadata:
   name: homelab-compute-slow
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
 spec:
   strategicPatches:
     - |
@@ -43,6 +47,8 @@ apiVersion: metal.sidero.dev/v1alpha2
 kind: ServerClass
 metadata:
   name: homelab-compute-medium
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
 spec:
   strategicPatches:
     - |
@@ -62,6 +68,8 @@ apiVersion: metal.sidero.dev/v1alpha2
 kind: ServerClass
 metadata:
   name: homelab-compute-fast
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
 spec:
   strategicPatches:
     - |
@@ -84,6 +92,8 @@ apiVersion: metal.sidero.dev/v1alpha2
 kind: ServerClass
 metadata:
   name: homelab-compute-gpu
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
 spec:
   strategicPatches:
     - |

@@ -2,6 +2,8 @@ apiVersion: metal.sidero.dev/v1alpha2
 kind: Environment
 metadata:
   name: homelab-compute
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
 spec:
   initrd:
     url: https://pxe.factory.talos.dev/image/1a1a8fdf48ac2c0647ad26a55b1a476f1a1d8862a68a758ce45f0806eefa61e1/v1.12.4/initramfs-amd64.xz
