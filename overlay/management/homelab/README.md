@@ -42,7 +42,17 @@ Pinned versions in these manifests:
 ## Worker bootstrap templates
 
 - `homelab-compute-v1-12-4-1`: non-GPU installer image.
-- `homelab-compute-gpu-v1-12-4-1`: GPU installer image.
+- `homelab-compute-gpu-v1-12-4-2`: GPU installer image.
+
+## NVIDIA on Talos
+
+- GPU nodes use the OSS NVIDIA kernel modules (`nvidia-open-gpu-kernel-modules-lts`).
+- GPU Talos config explicitly loads `nvidia`, `nvidia_uvm`, `nvidia_modeset`,
+  and `nvidia_drm` kernel modules.
+- Kubernetes device discovery/allocation is provided by `nvidia-device-plugin`
+  (standalone deployment), not by the full GPU Operator stack.
+- Runtime class `nvidia` is managed separately and deployed before the
+  `nvidia-device-plugin` app.
 
 ## NVIDIA on Talos
 
