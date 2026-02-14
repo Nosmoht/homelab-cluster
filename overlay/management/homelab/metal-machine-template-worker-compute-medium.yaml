@@ -1,12 +1,12 @@
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
 kind: MetalMachineTemplate
 metadata:
-  name: homelab-cp
+  name: homelab-compute-medium
 spec:
   template:
     spec:
       serverClassRef:
         apiVersion: metal.sidero.dev/v1alpha2
         kind: ServerClass
-        name: homelab-cp-i5
+        name: homelab-compute-medium
         namespace: default

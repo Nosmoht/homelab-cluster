@@ -2,12 +2,20 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: default
 resources:
-  - environment.yaml
+  - environment-compute.yaml
+  - environment-gpu.yaml
   - serverclasses.yaml
   - cluster.yaml
   - talos-control-plane.yaml
   - metal-cluster.yaml
   - metal-machine-template-cp.yaml
   - talos-config-template.yaml
-  - metal-machine-template-worker.yaml
-  - machine-deployment.yaml
+  - talos-config-template-gpu.yaml
+  - metal-machine-template-worker-compute-slow.yaml
+  - metal-machine-template-worker-compute-medium.yaml
+  - metal-machine-template-worker-compute-fast.yaml
+  - metal-machine-template-worker-compute-gpu.yaml
+  - machine-deployment-worker-compute-slow.yaml
+  - machine-deployment-worker-compute-medium.yaml
+  - machine-deployment-worker-compute-fast.yaml
+  - machine-deployment-worker-compute-gpu.yaml

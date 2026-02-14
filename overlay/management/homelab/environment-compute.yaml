@@ -1,0 +1,23 @@
+apiVersion: metal.sidero.dev/v1alpha2
+kind: Environment
+metadata:
+  name: homelab-compute
+spec:
+  initrd:
+    url: https://pxe.factory.talos.dev/image/1a1a8fdf48ac2c0647ad26a55b1a476f1a1d8862a68a758ce45f0806eefa61e1/v1.12.4/initramfs-amd64.xz
+  kernel:
+    args:
+      - console=tty0
+      - console=ttyS0
+      - consoleblank=0
+      - earlyprintk=ttyS0
+      - init_on_alloc=1
+      - initrd=initramfs.xz
+      - module.sig_enforce=1
+      - nvme_core.io_timeout=4294967295
+      - printk.devkmsg=on
+      - pti=on
+      - selinux=1
+      - slab_nomerge=
+      - talos.platform=metal
+    url: https://pxe.factory.talos.dev/image/1a1a8fdf48ac2c0647ad26a55b1a476f1a1d8862a68a758ce45f0806eefa61e1/v1.12.4/kernel-amd64

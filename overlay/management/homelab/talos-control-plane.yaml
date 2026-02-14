@@ -1691,7 +1691,7 @@ spec:
                     - usermode_helper=disabled
                 - name: drbd_transport_tcp
             install:
-              image: factory.talos.dev/metal-installer/21673c24c2599d637798768b9b706349ca91161583257179df72d775af9348c0:v1.12.4
+              image: factory.talos.dev/metal-installer/1a1a8fdf48ac2c0647ad26a55b1a476f1a1d8862a68a758ce45f0806eefa61e1:v1.12.4
             kubelet:
               extraArgs:
                 rotate-server-certificates: true
@@ -3395,7 +3395,7 @@ spec:
                     - usermode_helper=disabled
                 - name: drbd_transport_tcp
             install:
-              image: factory.talos.dev/metal-installer/21673c24c2599d637798768b9b706349ca91161583257179df72d775af9348c0:v1.12.4
+              image: factory.talos.dev/metal-installer/1a1a8fdf48ac2c0647ad26a55b1a476f1a1d8862a68a758ce45f0806eefa61e1:v1.12.4
             kubelet:
               extraArgs:
                 rotate-server-certificates: true

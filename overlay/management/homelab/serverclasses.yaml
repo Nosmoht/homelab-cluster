@@ -1,7 +1,7 @@
 apiVersion: metal.sidero.dev/v1alpha2
 kind: ServerClass
 metadata:
-  name: homelab-cp
+  name: homelab-cp-i5
 spec:
   strategicPatches:
     - |
@@ -10,20 +10,17 @@ spec:
           disk: /dev/sda
   environmentRef:
     namespace: default
-    name: homelab
+    name: homelab-compute
   qualifiers:
     hardware:
       - compute:
           processors:
             - productName: Intel(R) Core(TM) i5-7400T CPU @ 2.40GHz
-        system:
-          family: ThinkCentre M710q
-          manufacturer: LENOVO
 ---
 apiVersion: metal.sidero.dev/v1alpha2
 kind: ServerClass
 metadata:
-  name: homelab-worker
+  name: homelab-compute-slow
 spec:
   strategicPatches:
     - |
@@ -32,7 +29,7 @@ spec:
           disk: /dev/sda
   environmentRef:
     namespace: default
-    name: homelab
+    name: homelab-compute
   qualifiers:
     hardware:
       - compute:
@@ -41,15 +38,63 @@ spec:
         system:
           family: ThinkCentre M710q
           manufacturer: LENOVO
+---
+apiVersion: metal.sidero.dev/v1alpha2
+kind: ServerClass
+metadata:
+  name: homelab-compute-medium
+spec:
+  strategicPatches:
+    - |
+      machine:
+        install:
+          disk: /dev/sda
+  environmentRef:
+    namespace: default
+    name: homelab-compute
+  qualifiers:
+    hardware:
       - compute:
           processors:
             - productName: Intel(R) Core(TM) i5-7500T CPU @ 2.70GHz
-        system:
-          family: ThinkCentre M710q
-          manufacturer: LENOVO
+---
+apiVersion: metal.sidero.dev/v1alpha2
+kind: ServerClass
+metadata:
+  name: homelab-compute-fast
+spec:
+  strategicPatches:
+    - |
+      machine:
+        install:
+          disk: /dev/sda
+  environmentRef:
+    namespace: default
+    name: homelab-compute
+  qualifiers:
+    hardware:
       - compute:
           processors:
             - productName: Intel(R) Core(TM) i7-7700T CPU @ 2.90GHz
         system:
           family: ThinkCentre M910q
           manufacturer: LENOVO
+---
+apiVersion: metal.sidero.dev/v1alpha2
+kind: ServerClass
+metadata:
+  name: homelab-compute-gpu
+spec:
+  strategicPatches:
+    - |
+      machine:
+        install:
+          disk: /dev/sda
+  environmentRef:
+    namespace: default
+    name: homelab-gpu
+  qualifiers:
+    hardware:
+      - compute:
+          processors:
+            - productName: Intel(R) Core(TM) i7-7700K CPU @ 4.20GHz
