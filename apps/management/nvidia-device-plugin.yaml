@@ -1,32 +1,32 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: nvidia-gpu-operator
+  name: nvidia-device-plugin
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   destination:
-    namespace: gpu-operator
+    namespace: nvidia-device-plugin
     name: homelab
   project: management
   source:
-    chart: gpu-operator
-    repoURL: https://helm.ngc.nvidia.com/nvidia
-    targetRevision: v25.3.4
+    chart: nvidia-device-plugin
+    repoURL: https://nvidia.github.io/k8s-device-plugin
+    targetRevision: 0.18.2
     helm:
       valuesObject:
-        nfd:
+        runtimeClassName: nvidia
+        gfd:
           enabled: false
-        driver:
-          enabled: false
-        toolkit:
-          enabled: false
-        operator:
-          defaultRuntime: containerd
-        validator:
-          plugin: false
   syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        pod-security.kubernetes.io/enforce: privileged
+        pod-security.kubernetes.io/audit: privileged
+        pod-security.kubernetes.io/warn: privileged
     automated:
       prune: true
       selfHeal: true

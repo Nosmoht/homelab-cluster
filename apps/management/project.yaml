@@ -11,7 +11,9 @@ spec:
   destinations:
     - namespace: "*"
       server: https://kubernetes.default.svc
-    - namespace: gpu-operator
+    - namespace: kube-system
+      name: homelab
+    - namespace: nvidia-device-plugin
       name: homelab
   clusterResourceWhitelist:
     - group: "*"

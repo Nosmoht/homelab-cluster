@@ -20,4 +20,5 @@ resources:
   - dnsmasq-controller.yaml
   - metallb-operator.yaml
   - metallb.yaml
-  - nvidia-gpu-operator.yaml
+  - nvidia-runtimeclass.yaml
+  - nvidia-device-plugin.yaml

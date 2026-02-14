@@ -28,10 +28,10 @@ Pinned versions in these manifests:
     - `siderolabs/intel-ice-firmware`
     - `siderolabs/intel-ucode`
     - `siderolabs/nvme-cli`
-- GPU schematic ID: `21673c24c2599d637798768b9b706349ca91161583257179df72d775af9348c0`
+- GPU schematic ID: `60b815d95e1e79a818edadfffafa3cf3e2dcab27c7e6bb4cd53ed4aa52f5df84`
   - Extensions:
     - all standard extensions
-    - `siderolabs/nonfree-kmod-nvidia-lts`
+    - `siderolabs/nvidia-open-gpu-kernel-modules-lts`
     - `siderolabs/nvidia-container-toolkit-lts`
 
 ## Environments
@@ -43,6 +43,16 @@ Pinned versions in these manifests:
 
 - `homelab-compute-v1-12-4-1`: non-GPU installer image.
 - `homelab-compute-gpu-v1-12-4-1`: GPU installer image.
+
+## NVIDIA on Talos
+
+- GPU nodes use the OSS NVIDIA kernel modules (`nvidia-open-gpu-kernel-modules-lts`).
+- GPU Talos config explicitly loads `nvidia`, `nvidia_uvm`, `nvidia_modeset`,
+  and `nvidia_drm` kernel modules.
+- Kubernetes device discovery/allocation is provided by `nvidia-device-plugin`
+  (standalone deployment), not by the full GPU Operator stack.
+- Runtime class `nvidia` is managed separately and deployed before the
+  `nvidia-device-plugin` app.
 
 ## Cilium bootstrap notes
 
