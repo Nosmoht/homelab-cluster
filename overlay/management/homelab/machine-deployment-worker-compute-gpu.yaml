@@ -6,7 +6,7 @@ metadata:
     argocd.argoproj.io/sync-wave: "1"
 spec:
   clusterName: homelab
-  replicas: 0
+  replicas: 1
   strategy:
     rollingUpdate:
       maxSurge: 0
